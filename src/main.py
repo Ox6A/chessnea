@@ -1,6 +1,3 @@
-from typing import Any
-
-
 import pygame
 from pygame import Surface
 from pathlib import Path
@@ -13,7 +10,7 @@ from pathlib import Path
 # pyright: reportMissingParameterType=false
 
 # Globals
-DEFAULT_WIDTH, DEFAULT_HEIGHT = 600, 600
+DEFAULT_WIDTH, DEFAULT_HEIGHT = 1200, 1200
 FPS = 60
 EMPTY, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING = 0, 1, 2, 3, 4, 5, 6
 WHITE, BLACK = 0, 1
@@ -23,7 +20,7 @@ SQUARE_WHITE = (240, 217, 181)
 SQUARE_BLACK = (181, 136, 99)
 
 # Variables
-DISPLAY_INDEX = True
+DISPLAY_INDEX = False
 
 class Board:
     def __init__(self): 
@@ -42,9 +39,9 @@ class Board:
         self.blackQueen: Surface = pygame.image.load(str(Path(__file__).resolve().parent.parent / "assets" / "bQ.svg")).convert_alpha()
         self.blackKing: Surface = pygame.image.load(str(Path(__file__).resolve().parent.parent / "assets" / "bK.svg")).convert_alpha()
 
-        self.board: list[list[list[Any]]] = []
-        self.draggedPiece = None
-        self.draggedPieceFrom = None
+        self.board: list[list[list[int | None]]] = []
+        self.draggedPiece: list[int | None] = []
+        self.draggedPieceFrom: list[int] = [] 
         for i in range(8):  
             row = []
             for i1 in range(8):
@@ -106,7 +103,7 @@ class Board:
     def drawBoard(self, screen, mousePosition) -> None:
         width, height = screen.get_size()
         cellWidth = min(width, height) // 8
-        pawnSize = int(cellWidth * 0.8)
+        pieceSize = int(cellWidth * 0.9)
 
         font = pygame.font.SysFont(None, 36)
 
@@ -119,63 +116,33 @@ class Board:
                 else:
                     color = SQUARE_WHITE
                 squareRect = pygame.draw.rect(screen, color, rect=(boardCol * cellWidth, screenRow * cellWidth, cellWidth, cellWidth))
-                if piece[1] == WHITE:
-                    if piece[0] == PAWN:
-                        pawnRect = self.whitePawn.get_rect(center=squareRect.center)
-                        screen.blit(self.whitePawn, pawnRect)
+                pieceImage = self.scalePieceImages(piece, pieceSize)
+                piecePickedUpBackground = pygame.Surface((cellWidth, cellWidth), pygame.SRCALPHA)
+                _ = piecePickedUpBackground.fill((60, 200, 60, 128))
+                if pieceImage is not None:
+                    if [boardRow, boardCol] != self.draggedPieceFrom:
+                        pieceRect = pieceImage.get_rect(center=squareRect.center)
+                        screen.blit(pieceImage, pieceRect)
                         continue
-                    elif piece[0] == ROOK:
-                        rookRect = self.whiteRook.get_rect(center=squareRect.center)
-                        screen.blit(self.whiteRook, rookRect)
-                        continue
-                    elif piece[0] == KNIGHT:
-                        knightRect = self.whiteKnight.get_rect(center=squareRect.center)
-                        screen.blit(self.whiteKnight, knightRect)
-                        continue
-                    elif piece[0] == BISHOP:
-                        bishopRect = self.whiteBishop.get_rect(center=squareRect.center)
-                        screen.blit(self.whiteBishop, bishopRect)
-                        continue
-                    elif piece[0] == QUEEN:
-                        queenRect = self.whiteQueen.get_rect(center=squareRect.center)
-                        screen.blit(self.whiteQueen, queenRect)
-                        continue
-                    elif piece[0] == KING:
-                        kingRect = self.whiteKing.get_rect(center=squareRect.center)
-                        screen.blit(self.whiteKing, kingRect)
-                        continue
-                elif piece[1] == BLACK:
-                    if piece[0] == PAWN:
-                        pawnRect = self.blackPawn.get_rect(center=squareRect.center)
-                        screen.blit(self.blackPawn, pawnRect)
-                        continue
-                    elif piece[0] == ROOK:
-                        rookRect = self.blackRook.get_rect(center=squareRect.center)
-                        screen.blit(self.blackRook, rookRect)
-                        continue
-                    elif piece[0] == KNIGHT:
-                        knightRect = self.blackKnight.get_rect(center=squareRect.center)
-                        screen.blit(self.blackKnight, knightRect)
-                        continue
-                    elif piece[0] == BISHOP:
-                        bishopRect = self.blackBishop.get_rect(center=squareRect.center)
-                        screen.blit(self.blackBishop, bishopRect)
-                        continue
-                    elif piece[0] == QUEEN:
-                        queenRect = self.blackQueen.get_rect(center=squareRect.center)
-                        screen.blit(self.blackQueen, queenRect)
-                        continue
-                    elif piece[0] == KING:
-                        kingRect = self.blackKing.get_rect(center=squareRect.center)
-                        screen.blit(self.blackKing, kingRect)
-                        continue
-
+                    else:
+                        pieceRect = pieceImage.get_rect(center=squareRect.center)
+                        pieceImage.set_alpha(128)  # Make the piece semi-transparent
+                        screen.blit(piecePickedUpBackground, squareRect)
+                        screen.blit(pieceImage, pieceRect)
                 if DISPLAY_INDEX:
                     index = boardRow * 8 + boardCol
                     text = font.render(str(index), True, (0, 0, 0))
                     textRect = text.get_rect(center=squareRect.center)
                     screen.blit(text, textRect)
-        
+                #print(f"{mousePosition}, {self.draggedPiece}, {self.draggedPieceFrom}, {boardRow}, {boardCol}")
+        if mousePosition is not None and self.draggedPiece and self.draggedPieceFrom:
+            row = int(self.draggedPieceFrom[0])
+            col = int(self.draggedPieceFrom[1])
+            piece = self.board[row][col]
+            draggedPieceImage = self.scalePieceImages(piece, pieceSize)
+            if draggedPieceImage is not None:
+                draggedPieceRect = draggedPieceImage.get_rect(center=mousePosition)
+                screen.blit(draggedPieceImage, draggedPieceRect)
 
 def main():
     _ = pygame.init()
@@ -183,21 +150,28 @@ def main():
     pygame.display.set_caption("Chess")
     board = Board()
 
+    sentMousePosition = None
     running = True
     while running:
         mousePosition = pygame.mouse.get_pos()
+        if board.draggedPiece:
+            sentMousePosition = mousePosition
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.Button == 1:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 square = board.convertMouseCoordinatesToBoardIndex(mousePosition, min(screen.get_size()) // 8)
                 if square is not None:
                     row, col = square
                     board.draggedPiece = board.board[row][col]
-            elif event.type == pygame.MOUSEBUTTONUP and event.Button == 1:
-                board.draggedPiece = None
+                    board.draggedPieceFrom = [row, col]
+                    sentMousePosition = mousePosition
+            elif event.type == pygame.MOUSEBUTTONUP:
+                board.draggedPiece = []
+                board.draggedPieceFrom = []
+                sentMousePosition = None
 
-        board.drawBoard(screen, mousePosition)
+        board.drawBoard(screen, sentMousePosition)
         pygame.display.flip()
 
     pygame.quit()
