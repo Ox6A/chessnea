@@ -1,3 +1,5 @@
+from string.templatelib import convert
+from traceback import print_stack
 import pygame
 from pygame import Surface
 from pathlib import Path
@@ -10,7 +12,7 @@ from pathlib import Path
 # pyright: reportMissingParameterType=false
 
 # Globals
-DEFAULT_WIDTH, DEFAULT_HEIGHT = 1200, 1200
+DEFAULT_WIDTH, DEFAULT_HEIGHT = 600, 600
 FPS = 60
 EMPTY, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING = 0, 1, 2, 3, 4, 5, 6
 WHITE, BLACK = 0, 1
@@ -118,7 +120,6 @@ class Board:
                 squareRect = pygame.draw.rect(screen, color, rect=(boardCol * cellWidth, screenRow * cellWidth, cellWidth, cellWidth))
                 pieceImage = self.scalePieceImages(piece, pieceSize)
                 piecePickedUpBackground = pygame.Surface((cellWidth, cellWidth), pygame.SRCALPHA)
-                _ = piecePickedUpBackground.fill((60, 200, 60, 128))
                 if pieceImage is not None:
                     if [boardRow, boardCol] != self.draggedPieceFrom:
                         pieceRect = pieceImage.get_rect(center=squareRect.center)
@@ -127,6 +128,7 @@ class Board:
                     else:
                         pieceRect = pieceImage.get_rect(center=squareRect.center)
                         pieceImage.set_alpha(128)  # Make the piece semi-transparent
+                        _ = piecePickedUpBackground.fill((60, 200, 60, 128))
                         screen.blit(piecePickedUpBackground, squareRect)
                         screen.blit(pieceImage, pieceRect)
                 if DISPLAY_INDEX:
@@ -139,10 +141,33 @@ class Board:
             row = int(self.draggedPieceFrom[0])
             col = int(self.draggedPieceFrom[1])
             piece = self.board[row][col]
+            legalMoves = self.checkLegalMoves(self.draggedPieceFrom)
+            circleRadius = max(4, cellWidth // 8)
+            for i in legalMoves:
+                legalMoveCenter = (i[1] * cellWidth + cellWidth // 2, (7 - i[0]) * cellWidth + cellWidth // 2)
+                _ = pygame.draw.circle(screen, (60, 200, 60, 128), legalMoveCenter, circleRadius)
+            currentSquare: tuple[int, int] | None = self.convertMouseCoordinatesToBoardIndex(mousePosition[1], min(screen.get_size()) // 8)
+            if currentSquare != tuple(self.draggedPieceFrom):
+                _ = piecePickedUpBackground.fill((60, 200, 60, 64))
+                screen.blit(piecePickedUpBackground, pygame.Rect(currentSquare[1] * cellWidth, (7 - currentSquare[0]) * cellWidth, cellWidth, cellWidth))
             draggedPieceImage = self.scalePieceImages(piece, pieceSize)
             if draggedPieceImage is not None:
-                draggedPieceRect = draggedPieceImage.get_rect(center=mousePosition)
+                draggedPieceRect = draggedPieceImage.get_rect(center=mousePosition[1])
                 screen.blit(draggedPieceImage, draggedPieceRect)
+    
+    def checkLegalMoves(self, fromSquare) -> list[list[int]]:
+        piece = self.board[fromSquare[0]][fromSquare[1]]
+        if piece[0] == PAWN:
+            direction = 1 if piece[1] == WHITE else -1
+            nextRow = fromSquare[0] + direction
+            if 0 <= nextRow < 8:
+                return [[nextRow, fromSquare[1]]]
+        return []
+
+    def registerNewPiecePosition(self, fromSquare, toSquare, piece) -> None:
+        if self.board[toSquare[0]][toSquare[1]][0] == EMPTY:
+            self.board[toSquare[0]][toSquare[1]] = piece
+            self.board[fromSquare[0]][fromSquare[1]] = [EMPTY, None]
 
 def main():
     _ = pygame.init()
@@ -167,11 +192,18 @@ def main():
                     board.draggedPieceFrom = [row, col]
                     sentMousePosition = mousePosition
             elif event.type == pygame.MOUSEBUTTONUP:
+                if board.draggedPiece:
+                    fromSquare = board.draggedPieceFrom
+                    toSquare = board.convertMouseCoordinatesToBoardIndex(mousePosition, min(screen.get_size()) // 8)
+                    #print(f"Attempting to move piece from {fromSquare} to {toSquare}")
+                    legalMoves = board.checkLegalMoves(fromSquare)
+                    if toSquare is not None and list(toSquare) in legalMoves:
+                        board.registerNewPiecePosition(fromSquare, toSquare, board.draggedPiece)
                 board.draggedPiece = []
                 board.draggedPieceFrom = []
                 sentMousePosition = None
-
-        board.drawBoard(screen, sentMousePosition)
+        dragging = [True, sentMousePosition]
+        board.drawBoard(screen, dragging)
         pygame.display.flip()
 
     pygame.quit()
