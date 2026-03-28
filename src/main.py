@@ -1,5 +1,3 @@
-from string.templatelib import convert
-from traceback import print_stack
 import pygame
 from pygame import Surface
 from pathlib import Path
@@ -27,6 +25,8 @@ DISPLAY_INDEX = False
 class Board:
     def __init__(self): 
         defaultPiece = [PAWN, WHITE]
+        self.sideToMove: int = WHITE
+        self.targetsVulnerableToEnPassant: list[list[int]] = []
         self.whitePawn: Surface = pygame.image.load(str(Path(__file__).resolve().parent.parent / "assets" / "wP.svg")).convert_alpha()
         self.whiteRook: Surface = pygame.image.load(str(Path(__file__).resolve().parent.parent / "assets" / "wR.svg")).convert_alpha()
         self.whiteKnight: Surface = pygame.image.load(str(Path(__file__).resolve().parent.parent / "assets" / "wN.svg")).convert_alpha()
@@ -156,13 +156,39 @@ class Board:
                 screen.blit(draggedPieceImage, draggedPieceRect)
     
     def checkLegalMoves(self, fromSquare) -> list[list[int]]:
+        validMoves = []
         piece = self.board[fromSquare[0]][fromSquare[1]]
         if piece[0] == PAWN:
             direction = 1 if piece[1] == WHITE else -1
             nextRow = fromSquare[0] + direction
-            if 0 <= nextRow < 8:
-                return [[nextRow, fromSquare[1]]]
-        return []
+            if 0 <= nextRow < 8: # Move forward
+                if self.board[nextRow][fromSquare[1]][0] == EMPTY:
+                    validMoves.append([nextRow, fromSquare[1], False])
+            else:
+                return validMoves
+            if (piece[1] == WHITE and fromSquare[0] == 1) or (piece[1] == BLACK and fromSquare[0] == 6): # Moves 2 squares forward from starting position 
+                nextRow = fromSquare[0] + 2 * direction
+                if 0 <= nextRow < 8:
+                    if self.board[nextRow][fromSquare[1]][0] == EMPTY and self.board[fromSquare[0] + direction][fromSquare[1]][0] == EMPTY:
+                        validMoves.append([nextRow, fromSquare[1], False])
+            captureRow = fromSquare[0] + direction
+            if 0 <= captureRow < 8: # Capture moves (diagonal)
+                rightCol = fromSquare[1] + 1
+                leftCol = fromSquare[1] - 1
+                if rightCol < 8 and self.board[captureRow][rightCol][0] != EMPTY and self.board[captureRow][rightCol][1] != piece[1]:
+                    validMoves.append([captureRow, rightCol, True])
+                if leftCol >= 0 and self.board[captureRow][leftCol][0] != EMPTY and self.board[captureRow][leftCol][1] != piece[1]:
+                    validMoves.append([captureRow, leftCol, True])
+
+                # En passant capture moves
+                if rightCol < 8 and [fromSquare[0], rightCol] in self.targetsVulnerableToEnPassant:
+                    if self.board[fromSquare[0]][rightCol][0] == PAWN and self.board[fromSquare[0]][rightCol][1] != piece[1] and self.board[captureRow][rightCol][0] == EMPTY:
+                        validMoves.append([captureRow, rightCol, True])
+                if leftCol >= 0 and [fromSquare[0], leftCol] in self.targetsVulnerableToEnPassant:
+                    if self.board[fromSquare[0]][leftCol][0] == PAWN and self.board[fromSquare[0]][leftCol][1] != piece[1] and self.board[captureRow][leftCol][0] == EMPTY:
+                        validMoves.append([captureRow, leftCol, True])
+
+        return validMoves
 
     def registerNewPiecePosition(self, fromSquare, toSquare, piece) -> None:
         if self.board[toSquare[0]][toSquare[1]][0] == EMPTY:
@@ -197,8 +223,21 @@ def main():
                     toSquare = board.convertMouseCoordinatesToBoardIndex(mousePosition, min(screen.get_size()) // 8)
                     #print(f"Attempting to move piece from {fromSquare} to {toSquare}")
                     legalMoves = board.checkLegalMoves(fromSquare)
-                    if toSquare is not None and list(toSquare) in legalMoves:
-                        board.registerNewPiecePosition(fromSquare, toSquare, board.draggedPiece)
+                    for legalMove in legalMoves:
+                        legalMoveLocation: list[int] = [legalMove[0], legalMove[1]]
+                        if toSquare is not None and list(toSquare) == legalMoveLocation:
+                            if toSquare[0] - 2 == fromSquare[0] or toSquare[0] + 2 == fromSquare[0]: # If the move is a 2-square pawn move, add the square behind the pawn to the list of squares vulnerable to en passant
+                                board.targetsVulnerableToEnPassant.append([toSquare[0], toSquare[1]])
+                            if legalMove[2]:  # If the move is a capture, remove the captured piece
+                                if board.board[toSquare[0]][toSquare[1]][0] == EMPTY: # If the target square is empty, it must be an en passant capture
+                                    if board.draggedPiece[1] == WHITE:
+                                        board.board[toSquare[0] - 1][toSquare[1]] = [EMPTY, None]
+                                    else:
+                                        board.board[toSquare[0] + 1][toSquare[1]] = [EMPTY, None]
+                                else:
+                                    board.board[toSquare[0]][toSquare[1]] = [EMPTY, None]
+                            board.registerNewPiecePosition(fromSquare, toSquare, board.draggedPiece)
+                            break
                 board.draggedPiece = []
                 board.draggedPieceFrom = []
                 sentMousePosition = None
