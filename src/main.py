@@ -5,6 +5,7 @@ import chessnea.config as config
 import chessnea.enums as enums
 import chessnea.assets as assets
 import chessnea.fen as fen
+import chessnea.moves as moveHandling
 
 class BoardHandling():
     def __init__(self)  -> None:
@@ -21,7 +22,7 @@ class BoardHandling():
         fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
         if (fromRow, fromCol) == (toRow, toCol) or fromRow == -1 or fromCol == -1 or toRow == -1 or toCol == -1:
             return # If an empty move; we exit
-        moves: list[tuple[int, int, enums.MoveType]] = self.getPseudoLegalMovesForPiece(row = fromRow, col = fromCol)
+        moves: list[tuple[int, int, enums.MoveType]] = moveHandling.getPseudoLegalMovesForPiece(self, row = fromRow, col = fromCol)
         # Check whether the move to be processed is a pseudo-legal move
         if (toRow, toCol, enums.MoveType.NORMAL) in moves or (toRow, toCol, enums.MoveType.CAPTURE) in moves or (toRow, toCol, enums.MoveType.EN_PASSANT) in moves or (toRow, toCol, enums.MoveType.CASTLING) in moves or (toRow, toCol, enums.MoveType.PROMOTION) in moves:
             moveType: enums.MoveType = enums.MoveType.NORMAL
@@ -52,65 +53,6 @@ class BoardHandling():
             self.SideToMove = enums.PieceColour.BLACK 
         else:
             self.SideToMove = enums.PieceColour.WHITE
-
-    def getPseudoLegalMovesForPiece(self, row: int, col: int) -> list[tuple[int, int, enums.MoveType]]:
-        # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
-        validMoves: list[tuple[int, int, enums.MoveType]] = []
-        if self.Board[row][col][0] == enums.Piece.EMPTY: # Standard move
-            return [(-1, -1, enums.MoveType.NORMAL)]
-        elif self.Board[row][col][0] == enums.Piece.PAWN: # Handle pawn logic (NEED A REFACTOR)
-            if self.Board[row][col][1] == enums.PieceColour.WHITE:
-                if row - 1 >= 0:
-                    if self.Board[row - 1][col][0] == enums.Piece.EMPTY:
-                        if row == 6:
-                            if self.Board[row - 2][col][0] == enums.Piece.EMPTY:
-                                validMoves.append((row - 1, col, enums.MoveType.NORMAL))
-                                validMoves.append((row - 2, col, enums.MoveType.NORMAL))
-                        else:
-                            validMoves.append((row - 1, col, enums.MoveType.NORMAL))
-                if row - 1 >= 0 and col + 1 <= 7:
-                    if (self.Board[row - 1][col + 1][0] != enums.Piece.EMPTY and 
-                        self.Board[row - 1][col + 1][0] != enums.Piece.KING and 
-                        self.Board[row - 1][col + 1][1] != self.Board[row][col][1]):
-                        validMoves.append((row - 1, col + 1, enums.MoveType.CAPTURE))
-                    if (row - 1, col + 1) == self.EnPassantTargettableSquare and self.Board[row - 1][col + 1][0] == enums.Piece.EMPTY:
-                        validMoves.append((row - 1, col + 1, enums.MoveType.EN_PASSANT))
-                    #if (((row - 1, col + 1) == self.EnPassantTargettableSquare and
-                        #(self.Board[row - 1][col + 1][1] != self.Board[row][col][1])) or
-                        #(self.Board[row - 1][col + 1][0] == enums.Piece.EMPTY)):
-                        #validMoves.append((row - 1, col + 1, enums.MoveType.EN_PASSANT))
-                if row - 1 >= 0 and col - 1 >= 0:
-                    if (self.Board[row - 1][col - 1][0] != enums.Piece.EMPTY and 
-                        self.Board[row - 1][col - 1][0] != enums.Piece.KING and  
-                        self.Board[row - 1][col - 1][1] != self.Board[row][col][1]):
-                        validMoves.append((row - 1, col - 1, enums.MoveType.CAPTURE))
-                    if (row - 1, col - 1) == self.EnPassantTargettableSquare:
-                        validMoves.append((row - 1, col - 1, enums.MoveType.EN_PASSANT))
-            else:
-                if row + 1 <= 7:
-                    if self.Board[row + 1][col][0] == enums.Piece.EMPTY:
-                        if row == 1:
-                            if self.Board[row + 2][col][0] == enums.Piece.EMPTY:
-                                validMoves.append((row + 1, col, enums.MoveType.NORMAL))
-                                validMoves.append((row + 2, col, enums.MoveType.NORMAL))
-                        else:
-                            validMoves.append((row + 1, col, enums.MoveType.NORMAL))
-                if row + 1 <= 7 and col + 1 <= 7:
-                    if (self.Board[row + 1][col + 1][0] != enums.Piece.EMPTY and 
-                        self.Board[row + 1][col + 1][0] != enums.Piece.KING and 
-                        self.Board[row + 1][col + 1][1] != self.Board[row][col][1]):
-                        validMoves.append((row + 1, col + 1, enums.MoveType.CAPTURE))
-                    if (row + 1, col + 1) == self.EnPassantTargettableSquare:
-                        validMoves.append((row + 1, col + 1, enums.MoveType.EN_PASSANT))
-                if row + 1 <= 7 and col - 1 >= 0:
-                    if (self.Board[row + 1][col - 1][0] != enums.Piece.EMPTY and 
-                        self.Board[row + 1][col - 1][0] != enums.Piece.KING and 
-                        self.Board[row + 1][col - 1][1] != self.Board[row][col][1]):
-                        validMoves.append((row + 1, col - 1, enums.MoveType.CAPTURE))
-                    if (row + 1, col - 1) == self.EnPassantTargettableSquare:
-                        validMoves.append((row + 1, col - 1, enums.MoveType.EN_PASSANT))
-            return validMoves
-        return [(-1, -1, enums.MoveType.NORMAL)]
 
     def getSquareUnderMousePosition(self) -> tuple[int, int] | None:
         # Converts absolute coordinates for the mouse position provided by Pygame into a internal board square
@@ -178,7 +120,7 @@ class Rendering():
                     _ = screen.blit(source = pieceBackgroundSurface, dest = (col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE))
                     moveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
                     _ = moveBackgroundSurface.fill(enums.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value)
-                    moves: list[tuple[int, int, enums.MoveType]] = board.getPseudoLegalMovesForPiece(row, col)
+                    moves: list[tuple[int, int, enums.MoveType]] = moveHandling.getPseudoLegalMovesForPiece(board, row, col)
                     for move in moves:
                         moveRow, moveCol, _ = move
                         if moveRow == -1 and moveCol == -1: continue
