@@ -1,26 +1,14 @@
-from typing import Protocol
-
 import pygame
 
 import chessnea.config as config
 import chessnea.board as boardHandling
-
-class BoardTypes(Protocol):
-    Board: list[list[tuple[config.Piece, config.PieceColour]]]
-    SideToMove: config.PieceColour
-    CastlingRights: list[config.CastlingRights]
-    EnPassantTargettableSquare: tuple[int, int]
-    FiftyMoveCounter: int
-    FullMoveCounter: int
-    sprites: list[list[pygame.Surface | None]]
-    piecePickedUp: tuple[int, int]
 
 class Rendering():
     # Handle all board rendering functions
     def __init__(self) -> None:
         self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
 
-    def drawBoardBackground(self, screen: pygame.Surface, board: BoardTypes) -> None:
+    def drawBoardBackground(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         # Draw the coloured squares for the chess board
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
@@ -30,7 +18,7 @@ class Rendering():
                     colour = config.RenderingColours.SQUARE_BLACK.value
                 _ = pygame.draw.rect(surface = screen, color = colour, rect = pygame.Rect(col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE, config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE))
     
-    def debugRenderingMethod(self, board: BoardTypes, screen: pygame.Surface) -> None:
+    def debugRenderingMethod(self, board: boardHandling.BoardHandling, screen: pygame.Surface) -> None:
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
                 coordinates: tuple[int, int] = (col * (config.WIDTH_PER_SQUARE), row * (config.HEIGHT_PER_SQUARE))
@@ -38,7 +26,7 @@ class Rendering():
                 textSurface: pygame.Surface = self.font.render(text = label, antialias = True, color = (0, 0, 0))
                 _ = screen.blit(source = textSurface, dest = (coordinates[0], coordinates[1]))
 
-    def renderBoard(self, screen: pygame.Surface, board: BoardTypes) -> None:
+    def renderBoard(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         sprite: pygame.Surface | None
         spriteRect: pygame.Rect
         pickedUpSprite: pygame.Surface | None = None
