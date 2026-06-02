@@ -1,5 +1,3 @@
-from typing import Protocol
-
 import pygame
 
 import chessnea.assets as assets
@@ -26,15 +24,10 @@ class BoardHandling():
         else:
             return None
 
-class getPseudoLegalMovesForPieceTypes(Protocol):
-    pass
-
-def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-    # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
-    validMoves: list[tuple[int, int, config.MoveType]] = []
-    if board.Board[row][col][0] == config.Piece.EMPTY: # Standard move
-        return [(-1, -1, config.MoveType.NORMAL)]
-    elif board.Board[row][col][0] == config.Piece.PAWN: # Handle pawn logic (NEED A REFACTOR)
+class getPseudoLegalMovesForPieceType():
+    @staticmethod
+    def pawn(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+        validMoves: list[tuple[int, int, config.MoveType]] = []
         if board.Board[row][col][1] == config.PieceColour.WHITE:
             if row - 1 >= 0:
                 if board.Board[row - 1][col][0] == config.Piece.EMPTY:
@@ -86,6 +79,13 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
                 if (row + 1, col - 1) == board.EnPassantTargettableSquare:
                     validMoves.append((row + 1, col - 1, config.MoveType.EN_PASSANT))
         return validMoves
+
+def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+    # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
+    if board.Board[row][col][0] == config.Piece.EMPTY: # Standard move
+        return [(-1, -1, config.MoveType.NORMAL)]
+    elif board.Board[row][col][0] == config.Piece.PAWN:
+        return getPseudoLegalMovesForPieceType.pawn(board, row, col)
     return [(-1, -1, config.MoveType.NORMAL)]
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
