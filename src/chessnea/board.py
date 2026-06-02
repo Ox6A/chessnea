@@ -24,68 +24,42 @@ class BoardHandling():
         else:
             return None
 
-class getPseudoLegalMovesForPieceType():
+class PseudoLegalMovesForPieceType():
     @staticmethod
     def pawn(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
         validMoves: list[tuple[int, int, config.MoveType]] = []
+        direction: int
+        startingRank: int
+
         if board.Board[row][col][1] == config.PieceColour.WHITE:
-            if row - 1 >= 0:
-                if board.Board[row - 1][col][0] == config.Piece.EMPTY:
-                    if row == 6:
-                        if board.Board[row - 2][col][0] == config.Piece.EMPTY:
-                            validMoves.append((row - 1, col, config.MoveType.NORMAL))
-                            validMoves.append((row - 2, col, config.MoveType.NORMAL))
-                    else:
-                        validMoves.append((row - 1, col, config.MoveType.NORMAL))
-            if row - 1 >= 0 and col + 1 <= 7:
-                if (board.Board[row - 1][col + 1][0] != config.Piece.EMPTY and 
-                    board.Board[row - 1][col + 1][0] != config.Piece.KING and 
-                    board.Board[row - 1][col + 1][1] != board.Board[row][col][1]):
-                    validMoves.append((row - 1, col + 1, config.MoveType.CAPTURE))
-                if (row - 1, col + 1) == board.EnPassantTargettableSquare and board.Board[row - 1][col + 1][0] == config.Piece.EMPTY:
-                    validMoves.append((row - 1, col + 1, config.MoveType.EN_PASSANT))
-                #if (((row - 1, col + 1) == self.EnPassantTargettableSquare and
-                    #(self.Board[row - 1][col + 1][1] != self.Board[row][col][1])) or
-                    #(self.Board[row - 1][col + 1][0] == config.Piece.EMPTY)):
-                    #validMoves.append((row - 1, col + 1, config.MoveType.EN_PASSANT))
-            if row - 1 >= 0 and col - 1 >= 0:
-                if (board.Board[row - 1][col - 1][0] != config.Piece.EMPTY and 
-                    board.Board[row - 1][col - 1][0] != config.Piece.KING and  
-                    board.Board[row - 1][col - 1][1] != board.Board[row][col][1]):
-                    validMoves.append((row - 1, col - 1, config.MoveType.CAPTURE))
-                if (row - 1, col - 1) == board.EnPassantTargettableSquare:
-                    validMoves.append((row - 1, col - 1, config.MoveType.EN_PASSANT))
+            direction = -1
+            startingRank = 6
         else:
-            if row + 1 <= 7:
-                if board.Board[row + 1][col][0] == config.Piece.EMPTY:
-                    if row == 1:
-                        if board.Board[row + 2][col][0] == config.Piece.EMPTY:
-                            validMoves.append((row + 1, col, config.MoveType.NORMAL))
-                            validMoves.append((row + 2, col, config.MoveType.NORMAL))
-                    else:
-                        validMoves.append((row + 1, col, config.MoveType.NORMAL))
-            if row + 1 <= 7 and col + 1 <= 7:
-                if (board.Board[row + 1][col + 1][0] != config.Piece.EMPTY and 
-                    board.Board[row + 1][col + 1][0] != config.Piece.KING and 
-                    board.Board[row + 1][col + 1][1] != board.Board[row][col][1]):
-                    validMoves.append((row + 1, col + 1, config.MoveType.CAPTURE))
-                if (row + 1, col + 1) == board.EnPassantTargettableSquare:
-                    validMoves.append((row + 1, col + 1, config.MoveType.EN_PASSANT))
-            if row + 1 <= 7 and col - 1 >= 0:
-                if (board.Board[row + 1][col - 1][0] != config.Piece.EMPTY and 
-                    board.Board[row + 1][col - 1][0] != config.Piece.KING and
-                    board.Board[row + 1][col - 1][1] != board.Board[row][col][1]):
-                    validMoves.append((row + 1, col - 1, config.MoveType.CAPTURE))
-                if (row + 1, col - 1) == board.EnPassantTargettableSquare:
-                    validMoves.append((row + 1, col - 1, config.MoveType.EN_PASSANT))
+            direction = 1
+            startingRank = 1
+        
+        targetSingleRow: int = row + direction
+        targetDoubleRow: int = row + (2 * direction)
+        if 0 <= targetSingleRow <= 7 and board.Board[targetSingleRow][col][0] == config.Piece.EMPTY: # Standard move
+            validMoves.append((targetSingleRow, col, config.MoveType.NORMAL))
+            if row == startingRank and board.Board[targetDoubleRow][col][0] == config.Piece.EMPTY: # Double move from starting rank
+                validMoves.append((targetDoubleRow, col, config.MoveType.NORMAL))
+
+        for targetDiagonalCol in [col -1, col + 1]: # Captures
+            if 0 <= targetDiagonalCol <= 7 and 0 <= targetSingleRow <= 7:
+                targetPiece, targetColour = board.Board[targetSingleRow][targetDiagonalCol][0], board.Board[targetSingleRow][targetDiagonalCol][1]
+                if targetPiece != config.Piece.EMPTY and targetPiece != config.Piece.KING and targetColour != board.Board[row][col][1]: # Diagonal capture
+                    validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.CAPTURE))
+                if (targetSingleRow, targetDiagonalCol) == board.EnPassantTargettableSquare and targetPiece == config.Piece.EMPTY: # En passant capture
+                    validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.EN_PASSANT))
         return validMoves
 
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
-    if board.Board[row][col][0] == config.Piece.EMPTY: # Standard move
+    if board.Board[row][col][0] == config.Piece.EMPTY:
         return [(-1, -1, config.MoveType.NORMAL)]
     elif board.Board[row][col][0] == config.Piece.PAWN:
-        return getPseudoLegalMovesForPieceType.pawn(board, row, col)
+        return PseudoLegalMovesForPieceType.pawn(board, row, col)
     return [(-1, -1, config.MoveType.NORMAL)]
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
@@ -93,6 +67,7 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
     if (fromRow, fromCol) == (toRow, toCol) or fromRow == -1 or fromCol == -1 or toRow == -1 or toCol == -1:
         return # If an empty move; we exit
     moves: list[tuple[int, int, config.MoveType]] = getPseudoLegalMovesForPiece(board, row = fromRow, col = fromCol)
+    pieceToMove, colourToMove = board.Board[fromRow][fromCol][0], board.Board[fromRow][fromCol][1]
     # Check whether the move to be processed is a pseudo-legal move
     if (toRow, toCol, config.MoveType.NORMAL) in moves or (toRow, toCol, config.MoveType.CAPTURE) in moves or (toRow, toCol, config.MoveType.EN_PASSANT) in moves or (toRow, toCol, config.MoveType.CASTLING) in moves or (toRow, toCol, config.MoveType.PROMOTION) in moves:
         moveType: config.MoveType = config.MoveType.NORMAL
@@ -104,14 +79,17 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         # Process the standard move
         board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
         board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
+    else:
+        print(f"Board: Invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
+        return
 
     # Begin other move type processing
     if (toRow, toCol, config.MoveType.EN_PASSANT) in moves: # Handle en passant
-        if board.Board[fromRow][fromCol][1] == config.PieceColour.WHITE:
+        if colourToMove == config.PieceColour.WHITE:
             board.Board[toRow + 1][toCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
         else:
             board.Board[toRow - 1][toCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
-    if board.Board[fromRow][fromCol][0] == config.Piece.PAWN: # Handle pawn logic (setting en passant squares)
+    if pieceToMove == config.Piece.PAWN: # Handle pawn logic (setting en passant squares)
         if (fromRow, fromCol) == (toRow + 2, toCol):
             board.EnPassantTargettableSquare = (toRow + 1, toCol)
         elif (fromRow, fromCol) == (toRow - 2, toCol):
