@@ -1,6 +1,10 @@
 from typing import Protocol
 
+import pygame
+
 import chessnea.enums as enums
+import chessnea.assets as assets
+import chessnea.config as config
 
 class BoardTypes(Protocol):
     Board: list[list[tuple[enums.Piece, enums.PieceColour]]]
@@ -10,6 +14,27 @@ class BoardTypes(Protocol):
     FiftyMoveCounter: int
     FullMoveCounter: int
     piecePickedUp: tuple[int, int]
+
+class BoardHandling():
+    def __init__(self)  -> None:
+        self.Board: list[list[tuple[enums.Piece, enums.PieceColour]]] = [[(enums.Piece.EMPTY, enums.PieceColour.WHITE) for _ in range(8)] for _ in range(8)] # Initialise an empty board
+        self.SideToMove: enums.PieceColour = enums.PieceColour.WHITE # White is the default side to move (subject to parsed FEN position)
+        self.CastlingRights: list[enums.CastlingRights] = [enums.CastlingRights.WHITE_KINGSIDE, enums.CastlingRights.WHITE_QUEENSIDE, enums.CastlingRights.BLACK_KINGSIDE, enums.CastlingRights.BLACK_QUEENSIDE]
+        self.EnPassantTargettableSquare: tuple[int, int] = (-1, -1) # Defines which square is attackable under en passant
+        self.FiftyMoveCounter: int = 0 # Niche rule allowing a draw after 50 moves without a capture
+        self.FullMoveCounter: int = 0 # Constant tracking for current move nr.
+        self.sprites: list[list[pygame.Surface | None]] = assets.loadSprites() # Load sprites from disk
+        self.piecePickedUp: tuple[int, int] = (-1, -1) # Current piece picked up by the mouse cursor
+
+    def getSquareUnderMousePosition(self) -> tuple[int, int] | None:
+        # Converts absolute coordinates for the mouse position provided by Pygame into a internal board square
+        mouseX, mouseY = pygame.mouse.get_pos()
+        col: int = mouseX // config.WIDTH_PER_SQUARE
+        row: int = mouseY // config.HEIGHT_PER_SQUARE
+        if 0 <= row < 8 and 0 <= col < 8:
+            return (row, col)
+        else:
+            return None
 
 def getPseudoLegalMovesForPiece(board: BoardTypes, row: int, col: int) -> list[tuple[int, int, enums.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
