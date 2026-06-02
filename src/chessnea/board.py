@@ -1,7 +1,10 @@
+import logging
 import pygame
 
 import chessnea.assets as assets
 import chessnea.config as config
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 class BoardHandling():
     def __init__(self)  -> None:
@@ -57,10 +60,10 @@ class PseudoLegalMovesForPieceType():
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
     if board.Board[row][col][0] == config.Piece.EMPTY:
-        return [(-1, -1, config.MoveType.NORMAL)]
+        return []
     elif board.Board[row][col][0] == config.Piece.PAWN:
         return PseudoLegalMovesForPieceType.pawn(board, row, col)
-    return [(-1, -1, config.MoveType.NORMAL)]
+    return []
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
@@ -68,23 +71,24 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         return # If an empty move; we exit
     moves: list[tuple[int, int, config.MoveType]] = getPseudoLegalMovesForPiece(board, row = fromRow, col = fromCol)
     pieceToMove, colourToMove = board.Board[fromRow][fromCol][0], board.Board[fromRow][fromCol][1]
+
     # Check whether the move to be processed is a pseudo-legal move
-    if (toRow, toCol, config.MoveType.NORMAL) in moves or (toRow, toCol, config.MoveType.CAPTURE) in moves or (toRow, toCol, config.MoveType.EN_PASSANT) in moves or (toRow, toCol, config.MoveType.CASTLING) in moves or (toRow, toCol, config.MoveType.PROMOTION) in moves:
-        moveType: config.MoveType = config.MoveType.NORMAL
-        for move in moves: # Assign move type to move to be processed
-            if move[0] == toRow and move[1] == toCol:
-                moveType = move[2]
-                break
-        print(f"Board: Processing move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}, Type: {moveType.name}")
-        # Process the standard move
-        board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
-        board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
-    else:
-        print(f"Board: Invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
+    moveType: config.MoveType | None = None
+    for move in moves:
+        moveRow, moveCol, moveMoveType = move
+        if moveRow == toRow and moveCol == toCol:
+            moveType = moveMoveType
+            break
+    if moveType is None:
+        logger.info(msg = f"Board: Invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
         return
+    logger.info(msg = f"Board: Processing move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}, Type: {moveType.name}")
+
+    board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
+    board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
 
     # Begin other move type processing
-    if (toRow, toCol, config.MoveType.EN_PASSANT) in moves: # Handle en passant
+    if moveType == config.MoveType.EN_PASSANT: # Handle en passant
         if colourToMove == config.PieceColour.WHITE:
             board.Board[toRow + 1][toCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
         else:

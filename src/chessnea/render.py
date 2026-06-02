@@ -1,7 +1,10 @@
+import logging
 import pygame
 
 import chessnea.config as config
 import chessnea.board as boardHandling
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 class Rendering():
     # Handle all board rendering functions
@@ -37,7 +40,7 @@ class Rendering():
                 if piece != config.Piece.EMPTY and board.piecePickedUp != (row, col):
                     sprite = board.sprites[colour.value][piece.value]
                     if sprite is None:
-                        print(f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
+                        logger.error(msg = f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
                         raise ValueError(f"Sprite for {colour.name} {piece.name} is None")
                     squareRect: pygame.Rect = pygame.Rect(
                         col * config.WIDTH_PER_SQUARE,
@@ -50,10 +53,9 @@ class Rendering():
                 elif board.piecePickedUp == (row, col):
                     pickedUpSprite = board.sprites[colour.value][piece.value]
                     pickedUpMoves = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
+
         if pickedUpMoves != []:
             for moveRow, moveCol, _ in pickedUpMoves:
-                if moveRow == -1 and moveCol == -1:
-                    continue
                 # legal move circle
                 _ = pygame.draw.circle(surface = screen, color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), radius = config.WIDTH_PER_SQUARE // 8)
 
