@@ -4,7 +4,7 @@ import pygame
 
 import chessnea.config as config
 import chessnea.enums as enums
-import chessnea.moves as moveHandling
+import chessnea.board as boardHandling
 
 class BoardTypes(Protocol):
     Board: list[list[tuple[enums.Piece, enums.PieceColour]]]
@@ -72,7 +72,7 @@ class Rendering():
                     _ = screen.blit(source = pieceBackgroundSurface, dest = (col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE))
                     moveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
                     _ = moveBackgroundSurface.fill(enums.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value)
-                    moves: list[tuple[int, int, enums.MoveType]] = moveHandling.getPseudoLegalMovesForPiece(board, row, col)
+                    moves: list[tuple[int, int, enums.MoveType]] = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
                     for move in moves:
                         moveRow, moveCol, _ = move
                         if moveRow == -1 and moveCol == -1: continue
