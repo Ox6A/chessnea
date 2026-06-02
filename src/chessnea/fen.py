@@ -34,21 +34,20 @@ def importFEN(board: BoardTypes, fen: str) -> None:
         raise ValueError(f"Invalid FEN: Invalid side to move field: {sideToMoveFEN}")
     
     # Set castling rights flag
-    if castlingRightsFEN == "-":
-        board.CastlingRights = []
-    else:
-        board.CastlingRights = []
+    tempCastlingRights: list[enums.CastlingRights] = []
+    if castlingRightsFEN != "-":
         for char in castlingRightsFEN:
             if char == "K":
-                board.CastlingRights.append(enums.CastlingRights.WHITE_KINGSIDE)
+                tempCastlingRights.append(enums.CastlingRights.WHITE_KINGSIDE)
             elif char == "Q":
-                board.CastlingRights.append(enums.CastlingRights.WHITE_QUEENSIDE)
+                tempCastlingRights.append(enums.CastlingRights.WHITE_QUEENSIDE)
             elif char == "k":
-                board.CastlingRights.append(enums.CastlingRights.BLACK_KINGSIDE)
+                tempCastlingRights.append(enums.CastlingRights.BLACK_KINGSIDE)
             elif char == "q":
-                board.CastlingRights.append(enums.CastlingRights.BLACK_QUEENSIDE)
+                tempCastlingRights.append(enums.CastlingRights.BLACK_QUEENSIDE)
             else:
                 raise ValueError(f"Invalid FEN: Invalid castling rights field: {castlingRightsFEN}")
+    board.CastlingRights = tempCastlingRights
     
     # Set en passant target flag
     if enPassantTargetSquareFEN == "-":
