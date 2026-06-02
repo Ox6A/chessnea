@@ -9,6 +9,7 @@ class BoardTypes(Protocol):
     EnPassantTargettableSquare: tuple[int, int]
     FiftyMoveCounter: int
     FullMoveCounter: int
+    piecePickedUp: tuple[int, int]
 
 def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, int]:
     # Convert FEN coordinates into our internal representation
