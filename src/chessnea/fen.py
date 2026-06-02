@@ -1,14 +1,5 @@
-from typing import Protocol
 import chessnea.config as config
-
-class BoardTypes(Protocol):
-    Board: list[list[tuple[config.Piece, config.PieceColour]]]
-    SideToMove: config.PieceColour
-    CastlingRights: list[config.CastlingRights]
-    EnPassantTargettableSquare: tuple[int, int]
-    FiftyMoveCounter: int
-    FullMoveCounter: int
-    piecePickedUp: tuple[int, int]
+import chessnea.board as boardHandling
 
 def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, int]:
     # Convert FEN coordinates into our internal representation
@@ -16,7 +7,7 @@ def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, in
         raise ValueError(f"BoardHandling: Invalid FEN: Invalid input square field: {file}{rank}")
     return (8 - int(rank), "abcdefgh".index(file))
 
-def importFEN(board: BoardTypes, fen: str) -> None:
+def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
     # Parse a position given in FEN into our internal representation, as well as assigning values to necessary flags for game flow
     splitFEN: list[str] = fen.split(sep = " ")
     if len(splitFEN) != 6: 

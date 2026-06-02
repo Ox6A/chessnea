@@ -5,15 +5,6 @@ import pygame
 import chessnea.assets as assets
 import chessnea.config as config
 
-class BoardTypes(Protocol):
-    Board: list[list[tuple[config.Piece, config.PieceColour]]]
-    SideToMove: config.PieceColour
-    CastlingRights: list[config.CastlingRights]
-    EnPassantTargettableSquare: tuple[int, int]
-    FiftyMoveCounter: int
-    FullMoveCounter: int
-    piecePickedUp: tuple[int, int]
-
 class BoardHandling():
     def __init__(self)  -> None:
         self.Board: list[list[tuple[config.Piece, config.PieceColour]]] = [[(config.Piece.EMPTY, config.PieceColour.WHITE) for _ in range(8)] for _ in range(8)] # Initialise an empty board
@@ -35,7 +26,10 @@ class BoardHandling():
         else:
             return None
 
-def getPseudoLegalMovesForPiece(board: BoardTypes, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+class getPseudoLegalMovesForPieceTypes(Protocol):
+    pass
+
+def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
     validMoves: list[tuple[int, int, config.MoveType]] = []
     if board.Board[row][col][0] == config.Piece.EMPTY: # Standard move
@@ -94,7 +88,7 @@ def getPseudoLegalMovesForPiece(board: BoardTypes, row: int, col: int) -> list[t
         return validMoves
     return [(-1, -1, config.MoveType.NORMAL)]
 
-def processMove(board: BoardTypes, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
+def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
     if (fromRow, fromCol) == (toRow, toCol) or fromRow == -1 or fromCol == -1 or toRow == -1 or toCol == -1:
         return # If an empty move; we exit
