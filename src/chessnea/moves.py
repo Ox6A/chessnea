@@ -9,6 +9,7 @@ class BoardTypes(Protocol):
     EnPassantTargettableSquare: tuple[int, int]
     FiftyMoveCounter: int
     FullMoveCounter: int
+    piecePickedUp: tuple[int, int]
 
 def getPseudoLegalMovesForPiece(board: BoardTypes, row: int, col: int) -> list[tuple[int, int, enums.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
