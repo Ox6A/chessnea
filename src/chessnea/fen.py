@@ -1,11 +1,10 @@
 from typing import Protocol
 import chessnea.config as config
-import chessnea.enums as enums
 
 class BoardTypes(Protocol):
-    Board: list[list[tuple[enums.Piece, enums.PieceColour]]]
-    SideToMove: enums.PieceColour
-    CastlingRights: list[enums.CastlingRights]
+    Board: list[list[tuple[config.Piece, config.PieceColour]]]
+    SideToMove: config.PieceColour
+    CastlingRights: list[config.CastlingRights]
     EnPassantTargettableSquare: tuple[int, int]
     FiftyMoveCounter: int
     FullMoveCounter: int
@@ -28,24 +27,24 @@ def importFEN(board: BoardTypes, fen: str) -> None:
 
     # Set side to move flag
     if sideToMoveFEN == "w":
-        board.SideToMove = enums.PieceColour.WHITE
+        board.SideToMove = config.PieceColour.WHITE
     elif sideToMoveFEN == "b":
-        board.SideToMove = enums.PieceColour.BLACK
+        board.SideToMove = config.PieceColour.BLACK
     else:
         raise ValueError(f"Invalid FEN: Invalid side to move field: {sideToMoveFEN}")
     
     # Set castling rights flag
-    tempCastlingRights: list[enums.CastlingRights] = []
+    tempCastlingRights: list[config.CastlingRights] = []
     if castlingRightsFEN != "-":
         for char in castlingRightsFEN:
             if char == "K":
-                tempCastlingRights.append(enums.CastlingRights.WHITE_KINGSIDE)
+                tempCastlingRights.append(config.CastlingRights.WHITE_KINGSIDE)
             elif char == "Q":
-                tempCastlingRights.append(enums.CastlingRights.WHITE_QUEENSIDE)
+                tempCastlingRights.append(config.CastlingRights.WHITE_QUEENSIDE)
             elif char == "k":
-                tempCastlingRights.append(enums.CastlingRights.BLACK_KINGSIDE)
+                tempCastlingRights.append(config.CastlingRights.BLACK_KINGSIDE)
             elif char == "q":
-                tempCastlingRights.append(enums.CastlingRights.BLACK_QUEENSIDE)
+                tempCastlingRights.append(config.CastlingRights.BLACK_QUEENSIDE)
             else:
                 raise ValueError(f"Invalid FEN: Invalid castling rights field: {castlingRightsFEN}")
     board.CastlingRights = tempCastlingRights
@@ -67,7 +66,7 @@ def importFEN(board: BoardTypes, fen: str) -> None:
     splitFENRanks: list[str] = splitFEN[0].split(sep = "/")
     if len(splitFENRanks) != 8: raise ValueError(f"Invalid FEN: Expected 8 ranks, got {len(splitFENRanks)}") # FEN position rank nr. check (erroneous data)
 
-    emptyBoard: list[list[tuple[enums.Piece, enums.PieceColour]]] = [[(enums.Piece.EMPTY, enums.PieceColour.WHITE) for _ in range(8)] for _ in range(8)] # Initialise an empty board for us to populate
+    emptyBoard: list[list[tuple[config.Piece, config.PieceColour]]] = [[(config.Piece.EMPTY, config.PieceColour.WHITE) for _ in range(8)] for _ in range(8)] # Initialise an empty board for us to populate
     for rankIndex, ranks in enumerate(splitFENRanks):
         fileIndex: int = 0
         for piece in ranks:
@@ -75,29 +74,29 @@ def importFEN(board: BoardTypes, fen: str) -> None:
                 raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
             if piece in "12345678":
                 for i in range(int(piece)):
-                    emptyBoard[rankIndex][fileIndex + i] = (enums.Piece.EMPTY, enums.PieceColour.WHITE)
+                    emptyBoard[rankIndex][fileIndex + i] = (config.Piece.EMPTY, config.PieceColour.WHITE)
                 fileIndex += int(piece)
             else:
-                colour: enums.PieceColour = enums.PieceColour.WHITE
+                colour: config.PieceColour = config.PieceColour.WHITE
                 if piece.isupper(): # Check char capitalisation before checking for equivalence with internal representation (invalid data)
-                    colour = enums.PieceColour.WHITE
+                    colour = config.PieceColour.WHITE
                 else:
-                    colour = enums.PieceColour.BLACK
+                    colour = config.PieceColour.BLACK
                 pieceUpper: str = piece.upper()
-                pieceType: enums.Piece = enums.Piece.EMPTY
+                pieceType: config.Piece = config.Piece.EMPTY
                 match pieceUpper: # Needs a recent version of Python (>Python 3.7?)
                     case "P":
-                        pieceType = enums.Piece.PAWN
+                        pieceType = config.Piece.PAWN
                     case "N":
-                        pieceType = enums.Piece.KNIGHT
+                        pieceType = config.Piece.KNIGHT
                     case "B":
-                        pieceType = enums.Piece.BISHOP
+                        pieceType = config.Piece.BISHOP
                     case "R":
-                        pieceType = enums.Piece.ROOK
+                        pieceType = config.Piece.ROOK
                     case "Q":
-                        pieceType = enums.Piece.QUEEN
+                        pieceType = config.Piece.QUEEN
                     case "K":
-                        pieceType = enums.Piece.KING
+                        pieceType = config.Piece.KING
                     case _:
                         raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
                 emptyBoard[rankIndex][fileIndex] = (pieceType, colour)

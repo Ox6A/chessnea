@@ -2,7 +2,6 @@ from os import environ
 import pygame
 
 import chessnea.config as config
-import chessnea.enums as enums
 import chessnea.fen as fen
 import chessnea.board as boardHandling
 import chessnea.render as render
@@ -26,7 +25,7 @@ def main() -> None:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 square: tuple[int, int] = board.getSquareUnderMousePosition() or (-1, -1)
                 if square != (-1, -1):
-                    if board.SideToMove == board.Board[square[0]][square[1]][1] and board.Board[square[0]][square[1]][0] != enums.Piece.EMPTY:
+                    if board.SideToMove == board.Board[square[0]][square[1]][1] and board.Board[square[0]][square[1]][0] != config.Piece.EMPTY:
                         board.piecePickedUp = square    
             elif event.type == pygame.MOUSEBUTTONUP:
                 boardHandling.processMove(board, fromSquare = board.piecePickedUp, toSquare = board.getSquareUnderMousePosition() or (-1, -1))

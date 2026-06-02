@@ -3,13 +3,12 @@ from typing import Protocol
 import pygame
 
 import chessnea.config as config
-import chessnea.enums as enums
 import chessnea.board as boardHandling
 
 class BoardTypes(Protocol):
-    Board: list[list[tuple[enums.Piece, enums.PieceColour]]]
-    SideToMove: enums.PieceColour
-    CastlingRights: list[enums.CastlingRights]
+    Board: list[list[tuple[config.Piece, config.PieceColour]]]
+    SideToMove: config.PieceColour
+    CastlingRights: list[config.CastlingRights]
     EnPassantTargettableSquare: tuple[int, int]
     FiftyMoveCounter: int
     FullMoveCounter: int
@@ -26,9 +25,9 @@ class Rendering():
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
                 if (row + col) % 2 == 0:
-                    colour = enums.RenderingColours.SQUARE_WHITE.value
+                    colour = config.RenderingColours.SQUARE_WHITE.value
                 else:
-                    colour = enums.RenderingColours.SQUARE_BLACK.value
+                    colour = config.RenderingColours.SQUARE_BLACK.value
                 _ = pygame.draw.rect(surface = screen, color = colour, rect = pygame.Rect(col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE, config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE))
     
     def debugRenderingMethod(self, board: BoardTypes, screen: pygame.Surface) -> None:
@@ -46,7 +45,7 @@ class Rendering():
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
                 piece, colour = board.Board[row][col]
-                if piece != enums.Piece.EMPTY and board.piecePickedUp != (row, col):
+                if piece != config.Piece.EMPTY and board.piecePickedUp != (row, col):
                     sprite = board.sprites[colour.value][piece.value]
                     if sprite is None:
                         print(f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
@@ -61,22 +60,22 @@ class Rendering():
                     _ = screen.blit(source=sprite, dest=spriteRect)
                 elif board.piecePickedUp == (row, col):
                     mouseX, mouseY = pygame.mouse.get_pos()
-                    if piece == enums.Piece.EMPTY:
+                    if piece == config.Piece.EMPTY:
                         continue
                     pickedUpSprite = board.sprites[colour.value][piece.value]
                     if pickedUpSprite is None:
                         print(f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
                         raise ValueError(f"Sprite for {colour.name} {piece.name} is None")
                     pieceBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
-                    _ = pieceBackgroundSurface.fill(enums.RenderingColours.PIECE_PICKED_UP_BACKGROUND.value)
+                    _ = pieceBackgroundSurface.fill(config.RenderingColours.PIECE_PICKED_UP_BACKGROUND.value)
                     _ = screen.blit(source = pieceBackgroundSurface, dest = (col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE))
                     moveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
-                    _ = moveBackgroundSurface.fill(enums.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value)
-                    moves: list[tuple[int, int, enums.MoveType]] = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
+                    _ = moveBackgroundSurface.fill(config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value)
+                    moves: list[tuple[int, int, config.MoveType]] = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
                     for move in moves:
                         moveRow, moveCol, _ = move
                         if moveRow == -1 and moveCol == -1: continue
-                        _ = pygame.draw.circle(surface = screen, color = enums.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), radius = config.WIDTH_PER_SQUARE // 8)
+                        _ = pygame.draw.circle(surface = screen, color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), radius = config.WIDTH_PER_SQUARE // 8)
         if board.piecePickedUp != (-1, -1) and pickedUpSprite is not None:
             mouseX, mouseY = pygame.mouse.get_pos()
             spriteRect = pickedUpSprite.get_rect(center=(mouseX, mouseY))

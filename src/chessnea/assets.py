@@ -1,14 +1,13 @@
 import pygame
 
 import chessnea.config as config
-import chessnea.enums as enums
 
 def loadSprites() -> list[list[pygame.Surface | None]]:
     # Loads all the sprites needed for game board rendering from disk in .svg format for scaling
     sprites: list[list[pygame.Surface | None]] = [[None for _ in range(6)] for _ in range(2)] # Empty nested list for sprites of all chess pieces in all colours
-    for colour in enums.PieceColour:
-        for piece in enums.Piece:
-            if piece != enums.Piece.EMPTY:
+    for colour in config.PieceColour:
+        for piece in config.Piece:
+            if piece != config.Piece.EMPTY:
                 filename: str = f"{colour.name.lower()[0]}{piece.name.upper()[0]}.svg" # Expected file name format
                 if piece.name.lower() == "knight":
                     filename = f"{colour.name.lower()[0]}N.svg"
@@ -19,9 +18,9 @@ def loadSprites() -> list[list[pygame.Surface | None]]:
                 else:
                     print(f"Init: Loaded sprite for {colour.name} {piece.name} from {filename}")
                     sprites[colour.value][piece.value] = img
-    for colour in enums.PieceColour:
-        for piece in enums.Piece:
-            if piece != enums.Piece.EMPTY and sprites[colour.value][piece.value] is None: # Double check if sprites were loaded correctly
+    for colour in config.PieceColour:
+        for piece in config.Piece:
+            if piece != config.Piece.EMPTY and sprites[colour.value][piece.value] is None: # Double check if sprites were loaded correctly
                 print(f"ERROR at Init: Failed to load sprite (Sprite for {colour.name} {piece.name} is None)")
                 raise ValueError(f"Failed to load sprite (Sprite for {colour.name} {piece.name} is None)")
     return sprites
