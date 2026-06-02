@@ -15,7 +15,7 @@ class BoardHandling():
         self.piecePickedUp: tuple[int, int] = (-1, -1) # Current piece picked up by the mouse cursor
 
     def getSquareUnderMousePosition(self) -> tuple[int, int] | None:
-        # Converts absolute coordinates for the mouse position provided by Pygame into a internal board square test
+        # Converts absolute coordinates for the mouse position provided by Pygame into a internal board square
         mouseX, mouseY = pygame.mouse.get_pos()
         col: int = mouseX // config.WIDTH_PER_SQUARE
         row: int = mouseY // config.HEIGHT_PER_SQUARE
