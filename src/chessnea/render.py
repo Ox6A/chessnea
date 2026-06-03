@@ -33,7 +33,6 @@ class Rendering():
         sprite: pygame.Surface | None
         spriteRect: pygame.Rect
         pickedUpSprite: pygame.Surface | None = None
-        pickedUpMoves: list[tuple[int, int, config.MoveType]] = []
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
                 piece, colour = board.Board[row][col]
@@ -52,12 +51,26 @@ class Rendering():
                     _ = screen.blit(source=sprite, dest=spriteRect)
                 elif board.piecePickedUp == (row, col):
                     pickedUpSprite = board.sprites[colour.value][piece.value]
-                    pickedUpMoves = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
 
-        if pickedUpMoves != []:
-            for moveRow, moveCol, _ in pickedUpMoves:
+        if board.piecePickedUpLegalMoves != []:
+            moveType: config.MoveType
+            for moveRow, moveCol, moveType in board.piecePickedUpLegalMoves:
+                if moveType == config.MoveType.CAPTURE or moveType == config.MoveType.EN_PASSANT:
+                    captureHighlightSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
+                    _ = pygame.draw.circle(
+                        surface = captureHighlightSurface, 
+                        color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
+                        center = (config.WIDTH_PER_SQUARE // 2, config.HEIGHT_PER_SQUARE // 2), 
+                        radius = config.WIDTH_PER_SQUARE // 2,
+                        width = config.WIDTH_PER_SQUARE // 8)
+                    _ = screen.blit(source = captureHighlightSurface, dest = (moveCol * config.WIDTH_PER_SQUARE, moveRow * config.HEIGHT_PER_SQUARE))
                 # legal move circle
-                _ = pygame.draw.circle(surface = screen, color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), radius = config.WIDTH_PER_SQUARE // 8)
+                else:
+                    _ = pygame.draw.circle(
+                        surface = screen, 
+                        color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
+                        center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), 
+                        radius = config.WIDTH_PER_SQUARE // 8)
 
         # moving piece square highlight
         pieceBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)

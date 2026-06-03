@@ -1,6 +1,7 @@
 from pathlib import Path
 from enum import IntEnum, Enum
 
+VERSION: str = "0.0.1"
 FPS: int = 60
 WIDTH: int = 600
 HEIGHT: int = 600
