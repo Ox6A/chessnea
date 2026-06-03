@@ -90,7 +90,8 @@ class PseudoLegalMovesForPieceType():
     def knight(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
         validMoves: list[tuple[int, int, config.MoveType]] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
-        directions: list[list[int]] = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]] # All 8 possible knight move directions
+        # Up 2 Left 1, Up 2 Right 1, Up 1 Left 2, Up 1 Right 2, Down 1 Left 2, Down 1 Right 2, Down 2 Left 1, Down 2 Right 1
+        directions: list[list[int]] = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]
         targetRow: int
         targetCol: int
 
@@ -174,16 +175,22 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
     if board.Board[row][col][0] == config.Piece.EMPTY:
         return []
     elif board.Board[row][col][0] == config.Piece.PAWN:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for pawn at square {(row, col)}")
         return PseudoLegalMovesForPieceType.pawn(board, row, col)
     elif board.Board[row][col][0] == config.Piece.BISHOP:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for bishop at square {(row, col)}")
         return PseudoLegalMovesForPieceType.bishop(board, row, col)
     elif board.Board[row][col][0] == config.Piece.KNIGHT:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for knight at square {(row, col)}")
         return PseudoLegalMovesForPieceType.knight(board, row, col)
     elif board.Board[row][col][0] == config.Piece.ROOK:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for rook at square {(row, col)}")
         return PseudoLegalMovesForPieceType.rook(board, row, col)
     elif board.Board[row][col][0] == config.Piece.QUEEN:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for queen at square {(row, col)}")
         return PseudoLegalMovesForPieceType.queen(board, row, col)
     elif board.Board[row][col][0] == config.Piece.KING:
+        logger.debug(msg = f"Board: Getting pseudo-legal moves for king at square {(row, col)}")
         return PseudoLegalMovesForPieceType.king(board, row, col)
     else:
         logging.error(msg = f"Board: Invalid piece type {board.Board[row][col][0]} at square {(row, col)}")
