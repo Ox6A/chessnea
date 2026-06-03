@@ -57,12 +57,36 @@ class PseudoLegalMovesForPieceType():
                     validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.EN_PASSANT))
         return validMoves
 
+    @staticmethod
+    def bishop(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+        validMoves: list[tuple[int, int, config.MoveType]] = []
+        currentColour = board.Board[row][col][1]
+        directions: list[list[int]] = [[-1, -1], [-1, 1], [1, -1], [1, 1]] # Up Left, Up Right, Down Left, Down Right
+        targetRow: int
+        targetCol: int
+
+        for i in directions:
+            targetRow, targetCol = row + i[0], col + i[1]
+            while 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
+                targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
+                if targetPiece == config.Piece.EMPTY:
+                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                elif targetColour == currentColour:
+                    break
+                elif targetPiece != config.Piece.KING:
+                    validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                    break
+                targetRow, targetCol = targetRow + i[0], targetCol + i[1]
+        return validMoves
+
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
     if board.Board[row][col][0] == config.Piece.EMPTY:
         return []
     elif board.Board[row][col][0] == config.Piece.PAWN:
         return PseudoLegalMovesForPieceType.pawn(board, row, col)
+    elif board.Board[row][col][0] == config.Piece.BISHOP:
+        return PseudoLegalMovesForPieceType.bishop(board, row, col)
     return []
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
