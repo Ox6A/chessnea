@@ -1,5 +1,8 @@
+import logging
 import chessnea.config as config
 import chessnea.board as boardHandling
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, int]:
     # Convert FEN coordinates into our internal representation
@@ -9,6 +12,7 @@ def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, in
 
 def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
     # Parse a position given in FEN into our internal representation, as well as assigning values to necessary flags for game flow
+    logger.info(msg = f"FEN: Importing FEN string: {fen}")
     splitFEN: list[str] = fen.split(sep = " ")
     if len(splitFEN) != 6: 
         raise ValueError(f"Invalid FEN: Expected 6 fields, got {len(splitFEN)}") # FEN field nr. check (erroneous data)
@@ -92,4 +96,5 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
                         raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
                 emptyBoard[rankIndex][fileIndex] = (pieceType, colour)
                 fileIndex += 1
+    logger.info(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
     board.Board = emptyBoard

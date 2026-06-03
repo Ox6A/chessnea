@@ -16,7 +16,8 @@ class BoardHandling():
         self.FullMoveCounter: int = 0 # Constant tracking for current move nr.
         self.sprites: list[list[pygame.Surface | None]] = assets.loadSprites() # Load sprites from disk
         self.piecePickedUp: tuple[int, int] = (-1, -1) # Current piece picked up by the mouse cursor
-
+        self.piecePickedUpLegalMoves: list[tuple[int, int, config.MoveType]] = [] # Legal moves cache for the currently picked up piece
+        
     def getSquareUnderMousePosition(self) -> tuple[int, int] | None:
         # Converts absolute coordinates for the mouse position provided by Pygame into a internal board square
         mouseX, mouseY = pygame.mouse.get_pos()
@@ -211,7 +212,7 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
             moveType = moveMoveType
             break
     if moveType is None:
-        logger.info(msg = f"Board: Invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
+        logger.warning(msg = f"Board: Invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
         return
     logger.info(msg = f"Board: Processing move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}, Type: {moveType.name}")
 
