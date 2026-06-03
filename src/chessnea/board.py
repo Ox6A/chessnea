@@ -150,6 +150,25 @@ class PseudoLegalMovesForPieceType():
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
+    @staticmethod
+    def king(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+        validMoves: list[tuple[int, int, config.MoveType]] = []
+        _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
+        directions: list[list[int]] = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]] # All 8 possible king move directions
+        targetRow: int
+        targetCol: int
+
+        for i in directions:
+            targetRow, targetCol = row + i[0], col + i[1]
+            if 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
+                targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
+                if targetPiece == config.Piece.EMPTY:
+                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                elif targetPiece != config.Piece.KING and targetColour != currentColour:
+                    validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                targetRow, targetCol = targetRow + i[0], targetCol + i[1]
+        return validMoves
+
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
     if board.Board[row][col][0] == config.Piece.EMPTY:
@@ -164,6 +183,10 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
         return PseudoLegalMovesForPieceType.rook(board, row, col)
     elif board.Board[row][col][0] == config.Piece.QUEEN:
         return PseudoLegalMovesForPieceType.queen(board, row, col)
+    elif board.Board[row][col][0] == config.Piece.KING:
+        return PseudoLegalMovesForPieceType.king(board, row, col)
+    else:
+        logging.error(msg = f"Board: Invalid piece type {board.Board[row][col][0]} at square {(row, col)}")
     return []
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
