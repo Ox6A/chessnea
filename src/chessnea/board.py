@@ -54,13 +54,19 @@ class PseudoLegalMovesForPieceType():
                 if targetPiece != config.Piece.EMPTY and targetPiece != config.Piece.KING and targetColour != board.Board[row][col][1]: # Diagonal capture
                     validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.CAPTURE))
                 if (targetSingleRow, targetDiagonalCol) == board.EnPassantTargettableSquare and targetPiece == config.Piece.EMPTY: # En passant capture
+                    if board.SideToMove == config.PieceColour.WHITE:
+                        if board.Board[targetSingleRow + 1][targetDiagonalCol][1] != config.PieceColour.BLACK:
+                            return validMoves
+                    else:
+                        if board.Board[targetSingleRow - 1][targetDiagonalCol][1] != config.PieceColour.WHITE:
+                            return validMoves 
                     validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.EN_PASSANT))
         return validMoves
 
     @staticmethod
     def bishop(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
         validMoves: list[tuple[int, int, config.MoveType]] = []
-        currentColour = board.Board[row][col][1]
+        _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         directions: list[list[int]] = [[-1, -1], [-1, 1], [1, -1], [1, 1]] # Up Left, Up Right, Down Left, Down Right
         targetRow: int
         targetCol: int
@@ -79,6 +85,26 @@ class PseudoLegalMovesForPieceType():
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
+    @staticmethod
+    def knight(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+        validMoves: list[tuple[int, int, config.MoveType]] = []
+        _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
+        directions: list[list[int]] = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]] # All 8 possible knight move directions
+        targetRow: int
+        targetCol: int
+
+        for i in directions:
+            targetRow, targetCol = row + i[0], col + i[1]
+            if 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
+                targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
+                if targetPiece == config.Piece.EMPTY:
+                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                elif targetPiece != config.Piece.KING and targetColour != currentColour:
+                    validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                targetRow, targetCol = targetRow + i[0], targetCol + i[1]
+        logging.info(msg = f"Board: Knight at {(row, col)} has {len(validMoves)} pseudo-legal moves")
+        return validMoves
+
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
     if board.Board[row][col][0] == config.Piece.EMPTY:
@@ -87,6 +113,8 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
         return PseudoLegalMovesForPieceType.pawn(board, row, col)
     elif board.Board[row][col][0] == config.Piece.BISHOP:
         return PseudoLegalMovesForPieceType.bishop(board, row, col)
+    elif board.Board[row][col][0] == config.Piece.KNIGHT:
+        return PseudoLegalMovesForPieceType.knight(board, row, col)
     return []
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
