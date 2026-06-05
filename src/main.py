@@ -1,3 +1,6 @@
+from typing import Literal
+
+
 from os import environ
 import logging
 import pygame
@@ -7,7 +10,7 @@ import chessnea.fen as fen
 import chessnea.board as boardHandling
 import chessnea.render as render
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(name = __name__)
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
@@ -21,6 +24,7 @@ def main() -> None:
     pygame.display.set_caption("Chess")
     clock: pygame.time.Clock = pygame.time.Clock()
     board: boardHandling.BoardHandling = boardHandling.BoardHandling()
+    _ = board.loadSpritesForBoard()
     renderThreadInstance: render.Rendering = render.Rendering()
     fen.importFEN(board = board, fen = config.FEN_STARTING_POSITION)
     logger.info(msg = "Init: Imported starting position FEN string")
@@ -29,17 +33,17 @@ def main() -> None:
     logger.info(msg = "Main: Started main game loop")
     while running:
         for event in pygame.event.get():
-            targetSquare: tuple[int, int]
+            targetSquare: tuple[int, int] | tuple[Literal[-1], Literal[-1]]
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                targetSquare= board.getSquareUnderMousePosition() or (-1, -1)
+                targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
                 if targetSquare != (-1, -1):
                     piece, colour = board.Board[targetSquare[0]][targetSquare[1]][0], board.Board[targetSquare[0]][targetSquare[1]][1]
                     if board.SideToMove == colour and piece != config.Piece.EMPTY:
                         board.piecePickedUp = targetSquare   
                         row, col = targetSquare
-                        board.piecePickedUpLegalMoves = boardHandling.getPseudoLegalMovesForPiece(board, row, col)
+                        board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board, row, col)
                         logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
                 targetSquare = board.getSquareUnderMousePosition() or (-1, -1)

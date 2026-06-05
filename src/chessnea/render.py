@@ -1,10 +1,13 @@
+from chessnea.config import Piece, PieceColour
+
+
 import logging
 import pygame
 
 import chessnea.config as config
 import chessnea.board as boardHandling
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(name = __name__)
 
 class Rendering():
     # Handle all board rendering functions
@@ -15,6 +18,7 @@ class Rendering():
         # Draw the coloured squares for the chess board
         for row in range(len(board.Board)):
             for col in range(len(board.Board[row])):
+                colour: tuple[int, int, int]
                 if (row + col) % 2 == 0:
                     colour = config.RenderingColours.SQUARE_WHITE.value
                 else:
@@ -33,9 +37,9 @@ class Rendering():
         sprite: pygame.Surface | None
         spriteRect: pygame.Rect
         pickedUpSprite: pygame.Surface | None = None
-        for row in range(len(board.Board)):
-            for col in range(len(board.Board[row])):
-                piece, colour = board.Board[row][col]
+        for row, rank in enumerate[list[tuple[Piece, PieceColour]]](board.Board):
+            for col, square in enumerate[tuple[Piece, PieceColour]](rank):
+                piece, colour = square
                 if piece != config.Piece.EMPTY and board.piecePickedUp != (row, col):
                     sprite = board.sprites[colour.value][piece.value]
                     if sprite is None:
@@ -47,8 +51,8 @@ class Rendering():
                         config.WIDTH_PER_SQUARE,
                         config.HEIGHT_PER_SQUARE,
                     )
-                    spriteRect = sprite.get_rect(center=squareRect.center)
-                    _ = screen.blit(source=sprite, dest=spriteRect)
+                    spriteRect = sprite.get_rect(center = squareRect.center)
+                    _ = screen.blit(source = sprite, dest = spriteRect)
                 elif board.piecePickedUp == (row, col):
                     pickedUpSprite = board.sprites[colour.value][piece.value]
 
@@ -61,8 +65,8 @@ class Rendering():
                         surface = captureHighlightSurface, 
                         color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
                         center = (config.WIDTH_PER_SQUARE // 2, config.HEIGHT_PER_SQUARE // 2), 
-                        radius = config.WIDTH_PER_SQUARE // 2,
-                        width = config.WIDTH_PER_SQUARE // 8)
+                        radius = config.WIDTH_PER_SQUARE / 2 + config.WIDTH_PER_SQUARE // 4,
+                        width = config.WIDTH_PER_SQUARE // 4)
                     _ = screen.blit(source = captureHighlightSurface, dest = (moveCol * config.WIDTH_PER_SQUARE, moveRow * config.HEIGHT_PER_SQUARE))
                 # legal move circle
                 else:
