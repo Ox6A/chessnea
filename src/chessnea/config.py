@@ -1,10 +1,11 @@
+from dataclasses import dataclass
 from pathlib import Path
 from enum import IntEnum, Enum
 
 VERSION: str = "0.0.1"
 FPS: int = 60
-WIDTH: int = 600
-HEIGHT: int = 600
+WIDTH: int = 1200
+HEIGHT: int = 1200
 BOARD_SIZE: int = 8
 PIECE_SET = "alpha"
 
@@ -34,6 +35,13 @@ class MoveType(IntEnum): # LUT for integer equivalence of possible chess move ty
     EN_PASSANT = 2
     CASTLING = 3
     PROMOTION = 4
+
+@dataclass(frozen = True)
+class MoveData:
+    fromSquare: tuple[int, int]
+    toSquare: tuple[int, int]
+    moveType: MoveType
+    promotionPiece: Piece | None = None
 
 class CastlingRights(IntEnum): # LUT for integer equivalence of side castling rights when parsing FEN strings
     WHITE_KINGSIDE = 0
