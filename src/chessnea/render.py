@@ -1,6 +1,3 @@
-from chessnea.config import Piece, PieceColour
-
-
 import logging
 import pygame
 
@@ -37,8 +34,8 @@ class Rendering():
         sprite: pygame.Surface | None
         spriteRect: pygame.Rect
         pickedUpSprite: pygame.Surface | None = None
-        for row, rank in enumerate[list[tuple[Piece, PieceColour]]](board.Board):
-            for col, square in enumerate[tuple[Piece, PieceColour]](rank):
+        for row, rank in enumerate[list[tuple[config.Piece, config.PieceColour]]](board.Board):
+            for col, square in enumerate[tuple[config.Piece, config.PieceColour]](rank):
                 piece, colour = square
                 if piece != config.Piece.EMPTY and board.piecePickedUp != (row, col):
                     sprite = board.sprites[colour.value][piece.value]
@@ -57,9 +54,8 @@ class Rendering():
                     pickedUpSprite = board.sprites[colour.value][piece.value]
 
         if board.piecePickedUpLegalMoves != []:
-            moveType: config.MoveType
-            for moveRow, moveCol, moveType in board.piecePickedUpLegalMoves:
-                if moveType == config.MoveType.CAPTURE or moveType == config.MoveType.EN_PASSANT:
+            for move in board.piecePickedUpLegalMoves:
+                if move.moveType == config.MoveType.CAPTURE or move.moveType == config.MoveType.EN_PASSANT:
                     captureHighlightSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
                     _ = pygame.draw.circle(
                         surface = captureHighlightSurface, 
@@ -67,13 +63,13 @@ class Rendering():
                         center = (config.WIDTH_PER_SQUARE // 2, config.HEIGHT_PER_SQUARE // 2), 
                         radius = config.WIDTH_PER_SQUARE / 2 + config.WIDTH_PER_SQUARE // 4,
                         width = config.WIDTH_PER_SQUARE // 4)
-                    _ = screen.blit(source = captureHighlightSurface, dest = (moveCol * config.WIDTH_PER_SQUARE, moveRow * config.HEIGHT_PER_SQUARE))
+                    _ = screen.blit(source = captureHighlightSurface, dest = (move.toSquare[1] * config.WIDTH_PER_SQUARE, move.toSquare[0] * config.HEIGHT_PER_SQUARE))
                 # legal move circle
                 else:
                     _ = pygame.draw.circle(
                         surface = screen, 
                         color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
-                        center = (moveCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, moveRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), 
+                        center = (move.toSquare[1] * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, move.toSquare[0] * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), 
                         radius = config.WIDTH_PER_SQUARE // 8)
 
         # moving piece square highlight
@@ -86,3 +82,48 @@ class Rendering():
             mouseX, mouseY = pygame.mouse.get_pos()
             spriteRect = pickedUpSprite.get_rect(center=(mouseX, mouseY))
             _ = screen.blit(source = pickedUpSprite, dest = spriteRect)
+
+    def renderPromotionChoice(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> list[tuple[pygame.Rect, config.Piece]]:
+        if board.pendingPromotion is None:
+            return []
+        promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA)
+        _ = promotionOverlaySurface.fill((0, 0, 0, 90))
+        _ = screen.blit(source = promotionOverlaySurface, dest = (0, 0))
+        toSquare: tuple[int, int] = board.pendingPromotion.toSquare
+        colour: config.PieceColour = board.pendingPromotion.colour
+        direction: int
+        if colour == config.PieceColour.BLACK:
+            direction = -1
+        else:
+            direction = 1
+
+        uiRects: list[tuple[pygame.Rect, config.Piece]] = []
+        for i, v in enumerate[config.PromotionalPieces](config.PromotionalPieces):
+            piece: config.Piece = config.Piece(v.value)
+            row: int = toSquare[0] + (direction * (i + 1))
+            col: int = toSquare[1]
+            if row < 0 or row > 7:
+                logger.error(msg = f"Render: Attempted to render promotion choice with out of bounds row {row}")
+                raise ValueError(f"Attempted to render promotion choice with out of bounds row {row}")
+            rect: pygame.Rect = pygame.Rect(
+                col * config.WIDTH_PER_SQUARE,
+                row * config.HEIGHT_PER_SQUARE,
+                config.WIDTH_PER_SQUARE,
+                config.HEIGHT_PER_SQUARE,
+            )
+
+            _ = pygame.draw.circle(
+                surface = screen,
+                color = config.RenderingColours.PROMOTION_CHOICE_BACKGROUND.value,
+                center = rect.center,
+                radius = config.WIDTH_PER_SQUARE // 2
+            )
+
+            sprite: pygame.Surface | None = board.sprites[colour.value][piece.value]
+            if sprite is None:
+                logger.error(msg = f"Render: Sprite for {colour.name} {piece.name} is None")
+                raise ValueError(f"Sprite for {colour.name} {piece.name} is None")
+            spriteRect: pygame.Rect = sprite.get_rect(center = rect.center)
+            _ = screen.blit(source = sprite, dest = spriteRect)
+            uiRects.append((rect, piece))
+        return uiRects

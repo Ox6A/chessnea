@@ -21,7 +21,8 @@ class BoardHandling():
         self.FullMoveCounter: int = 0 # Constant tracking for current move nr.
         self.sprites: list[list[pygame.Surface | None]] = [] # Load sprites from disk
         self.piecePickedUp: tuple[int, int] = (-1, -1) # Current piece picked up by the mouse cursor
-        self.piecePickedUpLegalMoves: list[tuple[int, int, config.MoveType]] = [] # Legal moves cache for the currently picked up piece
+        self.piecePickedUpLegalMoves: list[config.MoveData] = [] # Legal moves cache for the currently picked up piece
+        self.pendingPromotion: config.PromotionData | None = None # Hold the intended promotion move in place as we wait for user input
         
     def loadSpritesForBoard(self) -> None:
         self.sprites = assets.loadSprites()
@@ -35,13 +36,20 @@ class BoardHandling():
             return (row, col)
         else:
             return None
+    
+    def changeSideToMove(self) -> None:
+        if self.SideToMove == config.PieceColour.WHITE:
+            self.SideToMove = config.PieceColour.BLACK
+        else:
+            self.SideToMove = config.PieceColour.WHITE
 
 class PseudoLegalMovesForPieceType():
     @staticmethod
-    def pawn(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def pawn(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         direction: int
         startingRank: int
+        moveTypeToUse: config.MoveType
 
         if board.Board[row][col][1] == config.PieceColour.WHITE:
             direction = -1
@@ -49,33 +57,43 @@ class PseudoLegalMovesForPieceType():
         else:
             direction = 1
             startingRank = 1
-        
         targetSingleRow: int = row + direction
         targetDoubleRow: int = row + (2 * direction)
         if 0 <= targetSingleRow <= 7 and board.Board[targetSingleRow][col][0] == config.Piece.EMPTY: # Standard move
-            validMoves.append((targetSingleRow, col, config.MoveType.NORMAL))
+            moveTypeToUse = config.MoveType.NORMAL
+            if targetSingleRow == 0 or targetSingleRow == 7: # A single row push should be a promotion if landing on the final ranks
+                moveTypeToUse = config.MoveType.PROMOTION
+            validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, col), moveType = moveTypeToUse))
             if row == startingRank and board.Board[targetDoubleRow][col][0] == config.Piece.EMPTY: # Double move from starting rank
-                validMoves.append((targetDoubleRow, col, config.MoveType.NORMAL))
+                validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetDoubleRow, col), moveType = config.MoveType.NORMAL))
 
         for targetDiagonalCol in [col -1, col + 1]: # Captures
             if 0 <= targetDiagonalCol <= 7 and 0 <= targetSingleRow <= 7:
                 targetPiece, targetColour = board.Board[targetSingleRow][targetDiagonalCol][0], board.Board[targetSingleRow][targetDiagonalCol][1]
                 if targetPiece != config.Piece.EMPTY and targetPiece != config.Piece.KING and targetColour != board.Board[row][col][1]: # Diagonal capture
-                    validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.CAPTURE))
+                    moveTypeToUse = config.MoveType.CAPTURE
+                    if targetSingleRow == 0 or targetSingleRow == 7: # A capture should be a promotion if landing on the final ranks
+                        moveTypeToUse = config.MoveType.PROMOTION
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = moveTypeToUse))
                 if (targetSingleRow, targetDiagonalCol) == board.EnPassantTargettableSquare and targetPiece == config.Piece.EMPTY: # En passant capture
                     if board.SideToMove == config.PieceColour.WHITE:
                         if board.Board[targetSingleRow + 1][targetDiagonalCol][0] == config.Piece.PAWN:
                             if board.Board[targetSingleRow + 1][targetDiagonalCol][1] == config.PieceColour.BLACK:
-                                validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.EN_PASSANT))
+                                validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.EN_PASSANT))
                     else:
                         if board.Board[targetSingleRow - 1][targetDiagonalCol][0] == config.Piece.PAWN:
                             if board.Board[targetSingleRow - 1][targetDiagonalCol][1] == config.PieceColour.WHITE:
-                                validMoves.append((targetSingleRow, targetDiagonalCol, config.MoveType.EN_PASSANT))
+                                validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.EN_PASSANT))
+        if direction == -1 and targetSingleRow == 0: # Promotion
+            ...
+        elif direction == 1 and targetSingleRow == 7:
+            ...
+
         return validMoves
 
     @staticmethod
-    def bishop(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def bishop(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         directions: list[list[int]] = [[-1, -1], [-1, 1], [1, -1], [1, 1]] # Up Left, Up Right, Down Left, Down Right
         targetRow: int
@@ -86,19 +104,19 @@ class PseudoLegalMovesForPieceType():
             while 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
                 targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
                 if targetPiece == config.Piece.EMPTY:
-                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.NORMAL))
                 elif targetColour == currentColour:
                     break
                 else:
                     if targetPiece != config.Piece.KING:
-                        validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                        validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                     break
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
     @staticmethod
-    def knight(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def knight(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         # Up 2 Left 1, Up 2 Right 1, Up 1 Left 2, Up 1 Right 2, Down 1 Left 2, Down 1 Right 2, Down 2 Left 1, Down 2 Right 1
         directions: list[list[int]] = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]
@@ -110,15 +128,15 @@ class PseudoLegalMovesForPieceType():
             if 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
                 targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
                 if targetPiece == config.Piece.EMPTY:
-                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.NORMAL))
                 elif targetPiece != config.Piece.KING and targetColour != currentColour:
-                    validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
     @staticmethod
-    def rook(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def rook(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         directions: list[list[int]] = [[-1, 0], [1, 0], [0, -1], [0, 1]] # Up, Down, Left, Right
         targetRow: int
@@ -129,19 +147,19 @@ class PseudoLegalMovesForPieceType():
             while 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
                 targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
                 if targetPiece == config.Piece.EMPTY:
-                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.NORMAL))
                 elif targetColour == currentColour:
                     break
                 else:
                     if targetPiece != config.Piece.KING:
-                        validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                        validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                     break
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
     @staticmethod
-    def queen(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def queen(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         # Up Left, Up, Up Right, Left, Right, Down Left, Down, Down Right
         directions: list[list[int]] = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
@@ -153,19 +171,19 @@ class PseudoLegalMovesForPieceType():
             while 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
                 targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
                 if targetPiece == config.Piece.EMPTY:
-                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.NORMAL))
                 elif targetColour == currentColour:
                     break
                 else:
                     if targetPiece != config.Piece.KING:
-                        validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                        validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                     break
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
     @staticmethod
-    def king(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
-        validMoves: list[tuple[int, int, config.MoveType]] = []
+    def king(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+        validMoves: list[config.MoveData] = []
         _, currentColour = board.Board[row][col][0], board.Board[row][col][1]
         directions: list[list[int]] = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]] # All 8 possible king move directions
         targetRow: int
@@ -176,15 +194,15 @@ class PseudoLegalMovesForPieceType():
             if 0 <= targetRow <= 7 and 0 <= targetCol <= 7:
                 targetPiece, targetColour = board.Board[targetRow][targetCol][0], board.Board[targetRow][targetCol][1]
                 if targetPiece == config.Piece.EMPTY:
-                    validMoves.append((targetRow, targetCol, config.MoveType.NORMAL))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.NORMAL))
                 elif targetPiece != config.Piece.KING and targetColour != currentColour:
-                    validMoves.append((targetRow, targetCol, config.MoveType.CAPTURE))
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
         return validMoves
 
-def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
     # In order to get all legal moves, we get all pseudo-legal moves (ignoring check conditions)
-    moves: list[tuple[int, int, config.MoveType]] = []
+    moves: list[config.MoveData] = []
     if board.Board[row][col][0] == config.Piece.EMPTY:
         return []
     elif board.Board[row][col][0] == config.Piece.PAWN:
@@ -313,7 +331,7 @@ def isSquareAttacked(board: BoardHandling, targetSquare: tuple[int, int], attack
         return True
     return False
 
-def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tuple[int, int, config.MoveType]]:
+def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
     sourcePiece, sourceColour = board.Board[row][col][0], board.Board[row][col][1]
     if sourcePiece == config.Piece.EMPTY:
         logger.error(msg = f"Board: Attempting to get legal moves for empty square {(row, col)}")
@@ -321,10 +339,10 @@ def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tupl
     if sourceColour != board.SideToMove:
         logger.error(msg = f"Board: Attempting to get legal moves for piece of colour {sourceColour.name} when it is {board.SideToMove.name}'s turn to move")
         return []
-    pseudoLegalMoves: list[tuple[int, int, config.MoveType]] = getPseudoLegalMovesForPiece(board, row, col)
-    legalMoves: list[tuple[int, int, config.MoveType]] = []
+    pseudoLegalMoves: list[config.MoveData] = getPseudoLegalMovesForPiece(board, row, col)
+    legalMoves: list[config.MoveData] = []
     for pseudoMove in pseudoLegalMoves:
-        targetRow, targetCol, moveType = pseudoMove
+        targetRow, targetCol, moveType = pseudoMove.toSquare[0], pseudoMove.toSquare[1], pseudoMove.moveType
         tempBoardHandling = BoardHandling()
         tempBoard: list[list[tuple[config.Piece, config.PieceColour]]] = []
         # Create the temporary board as a hard copy
@@ -354,18 +372,30 @@ def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[tupl
             legalMoves.append(pseudoMove)
     return legalMoves
 
+def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) -> None:
+    if board.pendingPromotion is None:
+        logger.error(msg = "Board: Attempting to complete promotion when there is no pending promotion")
+        return
+    if promotionPieceType == config.Piece.KING or promotionPieceType == config.Piece.EMPTY:
+        logger.error(msg = f"Board: Attempting to promote to invalid piece type {promotionPieceType}")
+        return
+    toRow, toCol, colour = board.pendingPromotion.toSquare[0], board.pendingPromotion.toSquare[1], board.pendingPromotion.colour
+    board.Board[toRow][toCol] = (promotionPieceType, colour)
+    board.pendingPromotion = None
+    board.EnPassantTargettableSquare = (-1, -1)
+    board.changeSideToMove()
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
     if (fromRow, fromCol) == (toRow, toCol) or fromRow == -1 or fromCol == -1 or toRow == -1 or toCol == -1:
         return # If an empty move; we exit
-    moves: list[tuple[int, int, config.MoveType]] = getLegalMovesForPiece(board, row = fromRow, col = fromCol)
+    moves: list[config.MoveData] = getLegalMovesForPiece(board, row = fromRow, col = fromCol)
     pieceToMove, colourToMove = board.Board[fromRow][fromCol][0], board.Board[fromRow][fromCol][1]
 
     # Check whether the move to be processed is a pseudo-legal move
     moveType: config.MoveType | None = None
     for move in moves:
-        moveRow, moveCol, moveMoveType = move
+        moveRow, moveCol, moveMoveType = move.toSquare[0], move.toSquare[1], move.moveType
         if moveRow == toRow and moveCol == toCol:
             moveType = moveMoveType
             break
@@ -376,6 +406,11 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
 
     board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
     board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
+
+    if moveType == config.MoveType.PROMOTION:
+        board.pendingPromotion = config.PromotionData(fromSquare = fromSquare, toSquare = toSquare, moveType = config.MoveType.PROMOTION, colour = colourToMove)
+        board.EnPassantTargettableSquare = (-1, -1)
+        return
 
     # Begin other move type processing
     if moveType == config.MoveType.EN_PASSANT: # Handle en passant
@@ -392,7 +427,4 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         else:
             board.EnPassantTargettableSquare = (-1, -1)
 
-    if board.SideToMove == config.PieceColour.WHITE: # Handle switching side to move flag after each move is processed
-        board.SideToMove = config.PieceColour.BLACK 
-    else:
-        board.SideToMove = config.PieceColour.WHITE
+    board.changeSideToMove()
