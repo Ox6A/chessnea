@@ -29,6 +29,7 @@ def main() -> None:
     fen.importFEN(board = board, fen = config.FEN_STARTING_POSITION)
     logger.info(msg = "Init: Imported starting position FEN string")
     running: bool = True
+    promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
     logger.info(msg = "Main: Started main game loop")
     while running:
@@ -37,13 +38,21 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                if board.pendingPromotion:
+                    mouseX, mouseY = pygame.mouse.get_pos()
+                    for uiRect, piece in promotionUIRects:
+                        if uiRect.collidepoint(mouseX, mouseY):
+                            boardHandling.completePromotion(board, promotionPieceType = piece)
+                            logger.debug(msg = f"Main: Processed promotion to {piece.name}")
+                            break
+                    continue
                 targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
                 if targetSquare != (-1, -1):
                     piece, colour = board.Board[targetSquare[0]][targetSquare[1]][0], board.Board[targetSquare[0]][targetSquare[1]][1]
                     if board.SideToMove == colour and piece != config.Piece.EMPTY:
                         board.piecePickedUp = targetSquare   
                         row, col = targetSquare
-                        board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board, row, col)
+                        board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
                         logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
                 targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
@@ -54,6 +63,7 @@ def main() -> None:
         renderThreadInstance.drawBoardBackground(screen, board)
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen, board)
+        promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
         pygame.display.flip()
         _ = clock.tick(config.FPS)
 
