@@ -28,7 +28,7 @@ def main() -> None:
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
-    logger.info(msg = "Main: Started main game loop")
+    logger.info(msg = "Init: Started main game loop")
     cursorChanged: bool = False
     while running:
         for event in pygame.event.get():
