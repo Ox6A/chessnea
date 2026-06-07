@@ -1,3 +1,6 @@
+from chessnea.config import CheckState
+
+
 from typing import Literal
 import logging
 import pygame
@@ -24,6 +27,10 @@ class BoardHandling():
         self.piecePickedUpLegalMoves: list[config.MoveData] = [] # Legal moves cache for the currently picked up piece
         self.pendingPromotion: config.PromotionData | None = None # Hold the intended promotion move in place as we wait for user input
         self.moveHighlighting: config.MoveHighlighting = config.MoveHighlighting() # Store the current and previous move for move highlighting
+        self.checkState: CheckState = config.CheckState() # Store check state for check highlighting
+        self.gameState: config.GameState = config.GameState() # Store game state
+        self.threeFoldMoveHistory: list[config.MoveData] = [] # Store move history for threefold repetition rule
+        self.threeFoldRepetitionCounter: int = 0 # Counter for threefold repetition rule
         
     def loadSpritesForBoard(self) -> None:
         self.sprites = assets.loadSprites()
@@ -43,6 +50,12 @@ class BoardHandling():
             self.SideToMove = config.PieceColour.BLACK
         else:
             self.SideToMove = config.PieceColour.WHITE
+
+    def findOpposingColour(self, colour: config.PieceColour) -> config.PieceColour:
+        if colour == config.PieceColour.WHITE:
+            return config.PieceColour.BLACK
+        else:
+            return config.PieceColour.WHITE
 
 class PseudoLegalMovesForPieceType():
     @staticmethod
@@ -223,7 +236,7 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
         logger.error(msg = f"Board: Invalid piece type {board.Board[row][col][0]} at square {(row, col)}")
     return moves
 
-def findKing(board: BoardHandling, sourceColour: config.PieceColour) -> tuple[int, int] | tuple[Literal[-1], Literal[-1]]:
+def findKing(board: BoardHandling, sourceColour: config.PieceColour) -> tuple[int, int]:
     kingPosition: tuple[int, int] = (-1, -1)
     for rankIndex, rank in enumerate[list[tuple[config.Piece, config.PieceColour]]](board.Board):
         for fileIndex, file in enumerate[tuple[config.Piece, config.PieceColour]](rank):
@@ -328,6 +341,7 @@ def isSquareAttacked(board: BoardHandling, targetSquare: tuple[int, int], attack
     return False
 
 def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
+    enemyColour: config.PieceColour
     sourcePiece, sourceColour = board.Board[row][col][0], board.Board[row][col][1]
     if sourcePiece == config.Piece.EMPTY:
         logger.error(msg = f"Board: Attempting to get legal moves for empty square {(row, col)}")
@@ -354,19 +368,45 @@ def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[conf
             else:
                 tempBoard[targetRow - 1][targetCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
         # Check king check condition
-        kingPosition: tuple[int, int] | tuple[Literal[-1], Literal[-1]] = findKing(tempBoardHandling, sourceColour)
+        kingPosition: tuple[int, int] | tuple[Literal[-1], Literal[-1]] = findKing(board = tempBoardHandling, sourceColour = sourceColour)
         
         # Check whether the opponent is attacking the king
         kingInCheck: bool = False
-        enemyColour: config.PieceColour
-        if sourceColour == config.PieceColour.WHITE:
-            enemyColour = config.PieceColour.BLACK
-        else:
-            enemyColour = config.PieceColour.WHITE
-        kingInCheck = isSquareAttacked(tempBoardHandling, kingPosition, enemyColour)
+        enemyColour = tempBoardHandling.findOpposingColour(colour = sourceColour)
+        kingInCheck = isSquareAttacked(board = tempBoardHandling, targetSquare = kingPosition, attackingColour = enemyColour)
         if not kingInCheck:
             legalMoves.append(pseudoMove)
     return legalMoves
+
+def getAllLegalMovesForSide(board: BoardHandling, colour: config.PieceColour) -> list[config.MoveData]:
+    legalMoves: list[config.MoveData] = []
+    for rankIndex, rank in enumerate[list[tuple[config.Piece, config.PieceColour]]](board.Board):
+        for fileIndex, file in enumerate[tuple[config.Piece, config.PieceColour]](rank):
+            if file[0] != config.Piece.EMPTY and file[1] == colour:
+                legalMoves.extend(getLegalMovesForPiece(board, row = rankIndex, col = fileIndex))
+    return legalMoves
+
+def updateGameStateAfterMove(board: BoardHandling) -> None:
+    if checkForThreefoldRepetition(board = board):
+        board.gameState.gameOver = True
+        board.gameState.winner = None
+        board.gameState.reason = config.GameOverReason.THREEFOLD_REPETITION
+        logger.info(msg = f"Board: Game drawn by threefold repetition")
+        return
+
+    legalMoves: list[config.MoveData] = getAllLegalMovesForSide(board, colour = board.SideToMove)
+    if len(legalMoves) != 0:
+        return
+    if board.checkState.inCheck and board.checkState.colourInCheck == board.SideToMove:
+        board.gameState.gameOver = True
+        board.gameState.winner = board.findOpposingColour(colour = board.SideToMove)
+        board.gameState.reason = config.GameOverReason.CHECKMATE
+        logger.info(msg = f"Board: {board.SideToMove.name} is in checkmate")
+    else:
+        board.gameState.gameOver = True
+        board.gameState.winner = None
+        board.gameState.reason = config.GameOverReason.STALEMATE
+        logger.info(msg = f"Board: {board.SideToMove.name} is in stalemate")
 
 def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) -> None:
     if board.pendingPromotion is None:
@@ -380,7 +420,37 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
     logger.info(msg = f"Board: Completed promotion to {promotionPieceType.name} {colour.name} at square {(toRow, toCol)}")
     board.pendingPromotion = None
     board.EnPassantTargettableSquare = (-1, -1)
+    handleCheckStateAfterMove(board = board, colourToMove = colour)
     board.changeSideToMove()
+    updateGameStateAfterMove(board = board)
+
+def handleCheckStateAfterMove(board: BoardHandling, colourToMove: config.PieceColour) -> None:
+    enemyColour: config.PieceColour = board.findOpposingColour(colour = colourToMove)
+    kingPosition: tuple[int, int] = findKing(board, sourceColour = enemyColour)
+    if isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = colourToMove):
+        board.checkState.inCheck = True
+        board.checkState.square = kingPosition
+        board.checkState.colourInCheck = enemyColour
+        logger.info(msg = f"Board: {enemyColour.name} king is in check at square {kingPosition} after move by {colourToMove.name}")
+    else:
+        board.checkState.inCheck = False
+        board.checkState.square = (-1, -1)
+        board.checkState.colourInCheck = None
+
+def checkForThreefoldRepetition(board: BoardHandling) -> bool:
+    history: list[config.MoveData] = board.threeFoldMoveHistory
+    if len(history) < 8: # We need at least 8 half-moves to see if the same position has occurred three times
+        return False
+
+    latestCycle: list[config.MoveData] = history[-4:] # Get the latest 4 half-moves
+    previousCycle: list[config.MoveData] = history[-8:-4] # Get the previous 4 half-moves
+
+    if latestCycle == previousCycle:
+        board.threeFoldRepetitionCounter += 1
+        logger.info(msg = f"Board: Detected a repetition of the same position for the {board.threeFoldRepetitionCounter} time")
+    else:
+        board.threeFoldRepetitionCounter = 0 # Reset the counter if the cycles don't match
+    return board.threeFoldRepetitionCounter >= 2
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
@@ -403,7 +473,8 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
 
     board.moveHighlighting.previousMove = fromSquare
     board.moveHighlighting.currentMove = toSquare
-
+    moveDataForThreefoldRepetitionCheck: config.MoveData = config.MoveData(fromSquare = fromSquare, toSquare = toSquare, moveType = moveType)
+    board.threeFoldMoveHistory.append(moveDataForThreefoldRepetitionCheck)
     board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
     board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
 
@@ -427,4 +498,7 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         else:
             board.EnPassantTargettableSquare = (-1, -1)
 
+    handleCheckStateAfterMove(board = board, colourToMove = colourToMove)
+
     board.changeSideToMove()
+    updateGameStateAfterMove(board = board)
