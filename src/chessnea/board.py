@@ -84,11 +84,6 @@ class PseudoLegalMovesForPieceType():
                         if board.Board[targetSingleRow - 1][targetDiagonalCol][0] == config.Piece.PAWN:
                             if board.Board[targetSingleRow - 1][targetDiagonalCol][1] == config.PieceColour.WHITE:
                                 validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.EN_PASSANT))
-        if direction == -1 and targetSingleRow == 0: # Promotion
-            ...
-        elif direction == 1 and targetSingleRow == 7:
-            ...
-
         return validMoves
 
     @staticmethod
@@ -381,6 +376,7 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
         return
     toRow, toCol, colour = board.pendingPromotion.toSquare[0], board.pendingPromotion.toSquare[1], board.pendingPromotion.colour
     board.Board[toRow][toCol] = (promotionPieceType, colour)
+    logger.info(msg = f"Board: Completed promotion to {promotionPieceType.name} {colour.name} at square {(toRow, toCol)}")
     board.pendingPromotion = None
     board.EnPassantTargettableSquare = (-1, -1)
     board.changeSideToMove()

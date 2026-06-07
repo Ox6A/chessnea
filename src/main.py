@@ -43,6 +43,7 @@ def main() -> None:
                     for uiRect, piece in promotionUIRects:
                         if uiRect.collidepoint(mouseX, mouseY):
                             boardHandling.completePromotion(board, promotionPieceType = piece)
+                            promotionUIRects = []
                             logger.debug(msg = f"Main: Processed promotion to {piece.name}")
                             break
                     continue
@@ -55,6 +56,8 @@ def main() -> None:
                         board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
                         logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
+                if board.pendingPromotion:
+                    continue
                 targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
                 boardHandling.processMove(board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
                 logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
@@ -64,6 +67,15 @@ def main() -> None:
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen, board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
+        mouseX, mouseY = pygame.mouse.get_pos()
+        if board.pendingPromotion:
+            for uiRect, _ in promotionUIRects:
+                if uiRect.collidepoint(mouseX, mouseY):
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                    break
+        else:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
         pygame.display.flip()
         _ = clock.tick(config.FPS)
 
