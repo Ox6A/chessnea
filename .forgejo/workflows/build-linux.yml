@@ -19,7 +19,12 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y python3 python3-venv python3-pip file
+          apt-get install -y \
+            python3 \
+            python3-venv \
+            python3-pip \
+            libpython3.10 \
+            file
 
       - name: Build with PyInstaller
         run: |
