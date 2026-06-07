@@ -40,19 +40,19 @@ jobs:
 
           pyinstaller \
             --onefile \
-            --name chessnea-linux \
+            --name chessnea-linux-x86_64 \
             --paths src \
             --add-data "assets:assets" \
             src/main.py
 
-          chmod +x dist/chessnea-linux
-          file dist/chessnea-linux
+          chmod +x dist/chessnea-linux-x86_64
+          file dist/chessnea-linux-x86_64
 
       - name: Upload Linux executable
         uses: actions/upload-artifact@v3
         with:
-          name: chessnea-linux
-          path: dist/chessnea-linux
+          name: chessnea-linux-x86_64
+          path: dist/chessnea-linux-x86_64
 
   build-windows-wine:
     name: Build Windows executable with Wine
@@ -111,17 +111,17 @@ jobs:
         run: |
           xvfb-run -a wine winpython/Scripts/pyinstaller.exe \
             --onefile \
-            --name chessnea-windows \
+            --name chessnea-windows-x86_64 \
             --paths src \
             --add-data "assets;assets" \
             src/main.py
 
           mkdir -p dist/windows
-          cp dist/chessnea-windows.exe dist/windows/chessnea-windows.exe
-          file dist/windows/chessnea-windows.exe || true
+          cp dist/chessnea-windows-x86_64.exe dist/windows/chessnea-windows-x86_64.exe
+          file dist/windows/chessnea-windows-x86_64.exe || true
 
       - name: Upload Windows executable
         uses: actions/upload-artifact@v3
         with:
-          name: chessnea-windows
-          path: dist/windows/chessnea-windows.exe
+          name: chessnea-windows-x86_64
+          path: dist/windows/chessnea-windows-x86_64.exe
