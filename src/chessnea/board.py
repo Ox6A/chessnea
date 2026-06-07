@@ -23,6 +23,7 @@ class BoardHandling():
         self.piecePickedUp: tuple[int, int] = (-1, -1) # Current piece picked up by the mouse cursor
         self.piecePickedUpLegalMoves: list[config.MoveData] = [] # Legal moves cache for the currently picked up piece
         self.pendingPromotion: config.PromotionData | None = None # Hold the intended promotion move in place as we wait for user input
+        self.moveHighlighting: config.MoveHighlighting = config.MoveHighlighting() # Store the current and previous move for move highlighting
         
     def loadSpritesForBoard(self) -> None:
         self.sprites = assets.loadSprites()
@@ -399,6 +400,9 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         logger.warning(msg = f"Board: Rejecting invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
         return
     logger.info(msg = f"Board: Processing move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}, Type: {moveType.name}")
+
+    board.moveHighlighting.previousMove = fromSquare
+    board.moveHighlighting.currentMove = toSquare
 
     board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
     board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)

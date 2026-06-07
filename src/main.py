@@ -1,8 +1,6 @@
-from typing import Literal
-
-
 from os import environ
 import logging
+import typing
 import pygame
 
 import chessnea.config as config
@@ -32,9 +30,10 @@ def main() -> None:
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
     logger.info(msg = "Main: Started main game loop")
+    cursorChanged: bool = False
     while running:
         for event in pygame.event.get():
-            targetSquare: tuple[int, int] | tuple[Literal[-1], Literal[-1]]
+            targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -63,17 +62,18 @@ def main() -> None:
                 logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
                 board.piecePickedUp = (-1, -1)
                 board.piecePickedUpLegalMoves = []
-        renderThreadInstance.drawBoardBackground(screen, board)
+        renderThreadInstance.drawBoardBackground(screen = screen)
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen, board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
         mouseX, mouseY = pygame.mouse.get_pos()
-        if board.pendingPromotion:
+        if board.pendingPromotion and not cursorChanged:
             for uiRect, _ in promotionUIRects:
                 if uiRect.collidepoint(mouseX, mouseY):
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                    cursorChanged = True
                     break
-        else:
+        elif not board.pendingPromotion and cursorChanged:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         pygame.display.flip()
