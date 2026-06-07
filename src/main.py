@@ -24,10 +24,7 @@ def main() -> None:
     board: boardHandling.BoardHandling = boardHandling.BoardHandling()
     _ = board.loadSpritesForBoard()
     renderThreadInstance: render.Rendering = render.Rendering()
-    logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
-    fen.importFEN(board = board, fen = config.FEN_STARTING_POSITION)
-    board.PositionHistory.append(config.FEN_STARTING_POSITION) # Add the starting position to the position history
-    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = config.FEN_STARTING_POSITION)) # Add the starting position key to the position history keys for threefold
+    fen.handleStartingPositionFEN(board = board)
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
@@ -44,7 +41,7 @@ def main() -> None:
                         mouseX, mouseY = pygame.mouse.get_pos()
                         for uiRect, piece in promotionUIRects:
                             if uiRect.collidepoint(mouseX, mouseY):
-                                boardHandling.completePromotion(board, promotionPieceType = piece)
+                                boardHandling.completePromotion(board = board, promotionPieceType = piece)
                                 promotionUIRects = []
                                 logger.debug(msg = f"Main: Processed promotion to {piece.name}")
                                 break
@@ -62,13 +59,13 @@ def main() -> None:
                     if board.pendingPromotion:
                         continue
                     targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
-                    boardHandling.processMove(board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
+                    boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
                     logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
                     board.piecePickedUp = (-1, -1)
                     board.piecePickedUpLegalMoves = []
         renderThreadInstance.drawBoardBackground(screen = screen)
         #renderThreadInstance.debugRenderingMethod(board, screen)
-        renderThreadInstance.renderBoard(screen, board)
+        renderThreadInstance.renderBoard(screen = screen, board = board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
         mouseX, mouseY = pygame.mouse.get_pos()
         if board.pendingPromotion and not cursorChanged:
