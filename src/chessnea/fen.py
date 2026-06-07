@@ -10,9 +10,70 @@ def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, in
         raise ValueError(f"BoardHandling: Invalid FEN: Invalid input square field: {file}{rank}")
     return (8 - int(rank), "abcdefgh".index(file))
 
+def parseBoardCoordinatesToFENCoordinates(row: int, col: int) -> str:
+    # Convert our internal board coordinates into FEN coordinates
+    if row < 0 or row > 7 or col < 0 or col > 7:
+        raise ValueError(f"BoardHandling: Invalid FEN: Invalid input square field: {row} {col}")
+    return f"{'abcdefgh'[col]}{8 - row}"
+
+def exportFEN(board: boardHandling.BoardHandling) -> str:
+    positionFEN: str = ""
+    for row in board.Board:
+        emptySquareCounter: int = 0
+        for piece, colour in row:
+            # We want it to end up in the format : nr of squares / piece / nr of squares etc. etc.
+            if piece == config.Piece.EMPTY: 
+                emptySquareCounter += 1
+            else:
+                if emptySquareCounter != 0:
+                    positionFEN += str(emptySquareCounter)
+                    emptySquareCounter = 0
+                if colour == config.PieceColour.WHITE:
+                    positionFEN += config.PieceToFen.WHITE[piece]
+                else:
+                    positionFEN += config.PieceToFen.BLACK[piece]
+        if emptySquareCounter != 0:
+            positionFEN += str(emptySquareCounter)
+        positionFEN += "/"
+    positionFEN = positionFEN[:-1] # Remove the last "/"
+
+    sideToMoveFEN: str
+    if board.SideToMove == config.PieceColour.WHITE: # Encode side to move
+        sideToMoveFEN = "w"
+    else:
+        sideToMoveFEN= "b"
+    
+    castlingRightsFEN: str = "" # Encode castling rights
+    if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
+        castlingRightsFEN += "K"
+    if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
+        castlingRightsFEN += "Q"
+    if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
+        castlingRightsFEN += "k"
+    if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
+        castlingRightsFEN += "q"
+    if castlingRightsFEN == "": # Empty
+        castlingRightsFEN = "-"
+
+    if board.EnPassantTargettableSquare == (-1, -1): # Encode en passant target square
+        enPassantTargetSquareFEN: str = "-"
+    else:
+        enPassantTargetSquareFEN = parseBoardCoordinatesToFENCoordinates(row = board.EnPassantTargettableSquare[0], col = board.EnPassantTargettableSquare[1])
+
+    fiftyMoveCounterFEN: str = str(board.FiftyMoveCounter) # Encode move counters
+    fullMoveCounterFEN: str = str(board.FullMoveCounter)
+
+    FEN: str = f"{positionFEN} {sideToMoveFEN} {castlingRightsFEN} {enPassantTargetSquareFEN} {fiftyMoveCounterFEN} {fullMoveCounterFEN}"
+    logger.debug(msg = f"FEN: Exported FEN string: {FEN}")
+    return FEN
+
+def getFENasKey(fen: str) -> str:
+    splitFEN: list[str] = fen.split(sep = " ")
+    return splitFEN[0] + " " + splitFEN[1] + " " + splitFEN[2] + " " + splitFEN[3] # We only want the position, side to move, castling rights and en passant target square for our key, as this uniquely identifies a position for repetition detection
+
 def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
     # Parse a position given in FEN into our internal representation, as well as assigning values to necessary flags for game flow
-    logger.info(msg = f"FEN: Importing FEN string: {fen}")
+    logger.debug(msg = f"FEN: Importing FEN string: {fen}")
     splitFEN: list[str] = fen.split(sep = " ")
     if len(splitFEN) != 6: 
         raise ValueError(f"Invalid FEN: Expected 6 fields, got {len(splitFEN)}") # FEN field nr. check (erroneous data)
@@ -96,5 +157,5 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
                         raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
                 emptyBoard[rankIndex][fileIndex] = (pieceType, colour)
                 fileIndex += 1
-    logger.info(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
+    logger.debug(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
     board.Board = emptyBoard

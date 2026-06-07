@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from enum import IntEnum, Enum
+import typing
 
 VERSION: str = "0.0.1"
 FPS: int = 60
@@ -12,8 +13,7 @@ PIECE_SET = "alpha"
 HEIGHT_PER_SQUARE: int = HEIGHT // BOARD_SIZE
 WIDTH_PER_SQUARE: int = WIDTH // BOARD_SIZE
 
-#FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-FEN_STARTING_POSITION: str = "4k3/8/8/8/8/8/p7/1R2K3 b - - 0 1"
+FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
 FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_SQUARE_CHARACTERS
@@ -88,6 +88,23 @@ class GameState():
     gameOver: bool = False
     winner: PieceColour | None = None
     reason: GameOverReason | None = None
+
+@dataclass(frozen = True)
+class PieceToFen(): # LUT for character equivalence of chess pieces when exporting FEN strings
+    WHITE: typing.ClassVar[dict[Piece, str]] = {
+        Piece.PAWN: "P",
+        Piece.KNIGHT: "N",
+        Piece.BISHOP: "B",
+        Piece.ROOK: "R",
+        Piece.QUEEN: "Q",
+        Piece.KING: "K"}
+    BLACK: typing.ClassVar[dict[Piece, str]] = {
+        Piece.PAWN: "p",
+        Piece.KNIGHT: "n",
+        Piece.BISHOP: "b",
+        Piece.ROOK: "r",
+        Piece.QUEEN: "q",
+        Piece.KING: "k"}
 
 class RenderingColours(Enum): # Lichess (lichess.org) default colour scheme
     SQUARE_WHITE = (240, 217, 181)
