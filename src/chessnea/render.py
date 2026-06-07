@@ -1,3 +1,4 @@
+import math
 import logging
 import pygame
 
@@ -10,6 +11,10 @@ class Rendering():
     # Handle all board rendering functions
     def __init__(self) -> None:
         self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
+        self.promotionBackgroundSurface: pygame.Surface = self.createGradient(
+            size = (config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE),
+            centreColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_CENTRE.value,
+            edgeColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_EDGE.value)
 
     def drawBoardBackground(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         # Draw the coloured squares for the chess board
@@ -87,7 +92,7 @@ class Rendering():
         if board.pendingPromotion is None:
             return []
         promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA)
-        _ = promotionOverlaySurface.fill((0, 0, 0, 90))
+        _ = promotionOverlaySurface.fill(color = config.RenderingColours.PROMOTION_CHOICE_BOARD_OVERLAY.value)
         _ = screen.blit(source = promotionOverlaySurface, dest = (0, 0))
         toSquare: tuple[int, int] = board.pendingPromotion.toSquare
         colour: config.PieceColour = board.pendingPromotion.colour
@@ -100,7 +105,7 @@ class Rendering():
         uiRects: list[tuple[pygame.Rect, config.Piece]] = []
         for i, v in enumerate[config.PromotionalPieces](config.PromotionalPieces):
             piece: config.Piece = config.Piece(v.value)
-            row: int = toSquare[0] + (direction * (i + 1))
+            row: int = toSquare[0] + (direction * i)
             col: int = toSquare[1]
             if row < 0 or row > 7:
                 logger.error(msg = f"Render: Attempted to render promotion choice with out of bounds row {row}")
@@ -112,12 +117,7 @@ class Rendering():
                 config.HEIGHT_PER_SQUARE,
             )
 
-            _ = pygame.draw.circle(
-                surface = screen,
-                color = config.RenderingColours.PROMOTION_CHOICE_BACKGROUND.value,
-                center = rect.center,
-                radius = config.WIDTH_PER_SQUARE // 2
-            )
+            _= screen.blit(source = self.promotionBackgroundSurface, dest = rect)
 
             sprite: pygame.Surface | None = board.sprites[colour.value][piece.value]
             if sprite is None:
@@ -127,3 +127,22 @@ class Rendering():
             _ = screen.blit(source = sprite, dest = spriteRect)
             uiRects.append((rect, piece))
         return uiRects
+
+    def createGradient(self, size: tuple[int, int], centreColour: tuple[int, int, int, int], edgeColour: tuple[int, int, int, int]) -> pygame.Surface:
+        gradientSurface: pygame.Surface = pygame.Surface(size, pygame.SRCALPHA)
+        width, height = size[0], size[1]
+        for y in range(height):
+            for x in range(width):
+                distanceToCentre: float = math.sqrt(((x - width / 2) ** 2 + (y - height / 2) ** 2))
+                if distanceToCentre > min(width, height) / 2:
+                    gradientSurface.set_at((x, y), (0, 0, 0, 0))
+                    continue
+                amount: float = min(distanceToCentre / ((min(width, height) / 2)), 1)
+                red: int = int(centreColour[0] * (1 - amount) + edgeColour[0] * amount)
+                green: int = int(centreColour[1] * (1 - amount) + edgeColour[1] * amount)
+                blue: int = int(centreColour[2] * (1 - amount) + edgeColour[2] * amount)
+                alpha: int = int(centreColour[3] * (1 - amount) + edgeColour[3] * amount)
+                if distanceToCentre > (min(width, height) / 2) - 3:
+                    alpha = int(alpha * ((((min(width, height) / 2) - distanceToCentre) / 3)))
+                gradientSurface.set_at((x, y), (red, green, blue, alpha))
+        return gradientSurface
