@@ -134,7 +134,7 @@ jobs:
     needs:
       - build-linux
       - build-windows-wine
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(forgejo.ref, 'refs/tags/v')
 
     steps:
       - name: Download Linux executable
@@ -158,4 +158,4 @@ jobs:
         with:
           direction: upload
           release-dir: release
-          token: ${{ secrets.FORGEJO_TOKEN }}
+          token: ${{ forgejo.token }}
