@@ -18,6 +18,7 @@ class Rendering():
             centreColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_CENTRE.value,
             edgeColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_EDGE.value) # cache promotion UI
         self.currentMoveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache move highlight surface
+        self.checkHighlightBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache check highlight surface
 
     def createBoardBackgroundSurface(self) -> pygame.Surface:
         boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT))
@@ -45,6 +46,7 @@ class Rendering():
 
     def renderBoard(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         self.renderMoveHighlighting(screen = screen, board = board)
+        self.renderCheckHighlight(screen = screen, board = board)
         sprite: pygame.Surface | None
         spriteRect: pygame.Rect
         pickedUpSprite: pygame.Surface | None = None
@@ -96,6 +98,11 @@ class Rendering():
             mouseX, mouseY = pygame.mouse.get_pos()
             spriteRect = pickedUpSprite.get_rect(center=(mouseX, mouseY))
             _ = screen.blit(source = pickedUpSprite, dest = spriteRect)
+
+    def renderCheckHighlight(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
+        if board.checkState.inCheck and board.checkState.square != (-1, -1):
+            _ = self.checkHighlightBackgroundSurface.fill(config.RenderingColours.CHECK_HIGHLIGHT_BACKGROUND.value)
+            _ = screen.blit(source = self.checkHighlightBackgroundSurface, dest = (board.checkState.square[1] * config.WIDTH_PER_SQUARE, board.checkState.square[0] * config.HEIGHT_PER_SQUARE))
 
     def renderMoveHighlighting(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         for square in [board.moveHighlighting.currentMove, board.moveHighlighting.previousMove]:

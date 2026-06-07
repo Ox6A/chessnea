@@ -65,10 +65,29 @@ class PromotionalPieces(IntEnum): # LUT for integer equivalence of pieces that a
     ROOK = 3
     QUEEN = 4
 
-@dataclass()
+@dataclass
 class MoveHighlighting():
     currentMove: tuple[int, int] = (-1, -1)
     previousMove: tuple[int, int] = (-1, -1)
+
+@dataclass
+class CheckState():
+    inCheck: bool = False
+    square: tuple[int, int] = (-1, -1)
+    colourInCheck: PieceColour | None = None
+
+class GameOverReason(IntEnum): # LUT for integer equivalence of possible game over reasons
+    CHECKMATE = 0
+    STALEMATE = 1
+    INSUFFICIENT_MATERIAL = 2
+    THREEFOLD_REPETITION = 3
+    FIFTY_MOVE_RULE = 4
+
+@dataclass
+class GameState():
+    gameOver: bool = False
+    winner: PieceColour | None = None
+    reason: GameOverReason | None = None
 
 class RenderingColours(Enum): # Lichess (lichess.org) default colour scheme
     SQUARE_WHITE = (240, 217, 181)
@@ -77,6 +96,7 @@ class RenderingColours(Enum): # Lichess (lichess.org) default colour scheme
     PIECE_LEGAL_MOVE_BACKGROUND = (60, 200, 60, 128)
     PIECE_PREVIOUS_MOVE_BACKGROUND = (210, 210, 0, 128)
     PROMOTION_CHOICE_BOARD_OVERLAY = (0, 0, 0, 90)
+    CHECK_HIGHLIGHT_BACKGROUND = (255, 30, 20, 128)
 
 class RenderingGradientColours(Enum):
     PROMOTION_CHOICE_BACKGROUND_CENTRE = (226, 226, 226, 255)
