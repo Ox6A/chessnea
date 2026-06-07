@@ -24,8 +24,10 @@ def main() -> None:
     board: boardHandling.BoardHandling = boardHandling.BoardHandling()
     _ = board.loadSpritesForBoard()
     renderThreadInstance: render.Rendering = render.Rendering()
+    logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
     fen.importFEN(board = board, fen = config.FEN_STARTING_POSITION)
-    logger.info(msg = "Init: Imported starting position FEN string")
+    board.PositionHistory.append(config.FEN_STARTING_POSITION) # Add the starting position to the position history
+    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = config.FEN_STARTING_POSITION)) # Add the starting position key to the position history keys for threefold
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
@@ -37,31 +39,33 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if board.pendingPromotion:
-                    mouseX, mouseY = pygame.mouse.get_pos()
-                    for uiRect, piece in promotionUIRects:
-                        if uiRect.collidepoint(mouseX, mouseY):
-                            boardHandling.completePromotion(board, promotionPieceType = piece)
-                            promotionUIRects = []
-                            logger.debug(msg = f"Main: Processed promotion to {piece.name}")
-                            break
-                    continue
-                targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
-                if targetSquare != (-1, -1):
-                    piece, colour = board.Board[targetSquare[0]][targetSquare[1]][0], board.Board[targetSquare[0]][targetSquare[1]][1]
-                    if board.SideToMove == colour and piece != config.Piece.EMPTY:
-                        board.piecePickedUp = targetSquare   
-                        row, col = targetSquare
-                        board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
-                        logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
+                if not board.gameState.gameOver:
+                    if board.pendingPromotion:
+                        mouseX, mouseY = pygame.mouse.get_pos()
+                        for uiRect, piece in promotionUIRects:
+                            if uiRect.collidepoint(mouseX, mouseY):
+                                boardHandling.completePromotion(board, promotionPieceType = piece)
+                                promotionUIRects = []
+                                logger.debug(msg = f"Main: Processed promotion to {piece.name}")
+                                break
+                        continue
+                    targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
+                    if targetSquare != (-1, -1):
+                        piece, colour = board.Board[targetSquare[0]][targetSquare[1]][0], board.Board[targetSquare[0]][targetSquare[1]][1]
+                        if board.SideToMove == colour and piece != config.Piece.EMPTY:
+                            board.piecePickedUp = targetSquare   
+                            row, col = targetSquare
+                            board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
+                            logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
-                if board.pendingPromotion:
-                    continue
-                targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
-                boardHandling.processMove(board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
-                logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
-                board.piecePickedUp = (-1, -1)
-                board.piecePickedUpLegalMoves = []
+                if not board.gameState.gameOver:
+                    if board.pendingPromotion:
+                        continue
+                    targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
+                    boardHandling.processMove(board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
+                    logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
+                    board.piecePickedUp = (-1, -1)
+                    board.piecePickedUpLegalMoves = []
         renderThreadInstance.drawBoardBackground(screen = screen)
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen, board)

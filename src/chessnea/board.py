@@ -1,12 +1,10 @@
-from chessnea.config import CheckState
-
-
 from typing import Literal
 import logging
 import pygame
 
 import chessnea.assets as assets
 import chessnea.config as config
+import chessnea.fen as fen
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -27,10 +25,10 @@ class BoardHandling():
         self.piecePickedUpLegalMoves: list[config.MoveData] = [] # Legal moves cache for the currently picked up piece
         self.pendingPromotion: config.PromotionData | None = None # Hold the intended promotion move in place as we wait for user input
         self.moveHighlighting: config.MoveHighlighting = config.MoveHighlighting() # Store the current and previous move for move highlighting
-        self.checkState: CheckState = config.CheckState() # Store check state for check highlighting
+        self.checkState: config.CheckState = config.CheckState() # Store check state for check highlighting
         self.gameState: config.GameState = config.GameState() # Store game state
-        self.threeFoldMoveHistory: list[config.MoveData] = [] # Store move history for threefold repetition rule
-        self.threeFoldRepetitionCounter: int = 0 # Counter for threefold repetition rule
+        self.PositionHistory: list[str] = [] # Store move history as FEN strings
+        self.PositionHistoryAsKeys: list[str] = [] # Store move history as FEN strings when checking for threefold repetition
         
     def loadSpritesForBoard(self) -> None:
         self.sprites = assets.loadSprites()
@@ -395,18 +393,28 @@ def updateGameStateAfterMove(board: BoardHandling) -> None:
         return
 
     legalMoves: list[config.MoveData] = getAllLegalMovesForSide(board, colour = board.SideToMove)
-    if len(legalMoves) != 0:
-        return
-    if board.checkState.inCheck and board.checkState.colourInCheck == board.SideToMove:
-        board.gameState.gameOver = True
-        board.gameState.winner = board.findOpposingColour(colour = board.SideToMove)
-        board.gameState.reason = config.GameOverReason.CHECKMATE
-        logger.info(msg = f"Board: {board.SideToMove.name} is in checkmate")
-    else:
+    if len(legalMoves) == 0:
+        if board.checkState.inCheck and board.checkState.colourInCheck == board.SideToMove:
+            board.gameState.gameOver = True
+            board.gameState.winner = board.findOpposingColour(colour = board.SideToMove)
+            board.gameState.reason = config.GameOverReason.CHECKMATE
+            logger.info(msg = f"Board: {board.SideToMove.name} is in checkmate")
+            return
+        else:
+            board.gameState.gameOver = True
+            board.gameState.winner = None
+            board.gameState.reason = config.GameOverReason.STALEMATE
+            logger.info(msg = f"Board: {board.SideToMove.name} is in stalemate")
+            return
+    
+    if board.FiftyMoveCounter >= 100:
         board.gameState.gameOver = True
         board.gameState.winner = None
-        board.gameState.reason = config.GameOverReason.STALEMATE
-        logger.info(msg = f"Board: {board.SideToMove.name} is in stalemate")
+        board.gameState.reason = config.GameOverReason.FIFTY_MOVE_RULE
+        logger.info(msg = f"Board: Game drawn by fifty-move rule")
+        return
+    
+    
 
 def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) -> None:
     if board.pendingPromotion is None:
@@ -421,6 +429,11 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
     board.pendingPromotion = None
     board.EnPassantTargettableSquare = (-1, -1)
     handleCheckStateAfterMove(board = board, colourToMove = colour)
+    fenString: str = fen.exportFEN(board = board)
+    board.PositionHistory.append(fenString)
+    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
+    if colour == config.PieceColour.BLACK:
+        board.FullMoveCounter += 1
     board.changeSideToMove()
     updateGameStateAfterMove(board = board)
 
@@ -438,19 +451,13 @@ def handleCheckStateAfterMove(board: BoardHandling, colourToMove: config.PieceCo
         board.checkState.colourInCheck = None
 
 def checkForThreefoldRepetition(board: BoardHandling) -> bool:
-    history: list[config.MoveData] = board.threeFoldMoveHistory
-    if len(history) < 8: # We need at least 8 half-moves to see if the same position has occurred three times
-        return False
-
-    latestCycle: list[config.MoveData] = history[-4:] # Get the latest 4 half-moves
-    previousCycle: list[config.MoveData] = history[-8:-4] # Get the previous 4 half-moves
-
-    if latestCycle == previousCycle:
-        board.threeFoldRepetitionCounter += 1
-        logger.info(msg = f"Board: Detected a repetition of the same position for the {board.threeFoldRepetitionCounter} time")
-    else:
-        board.threeFoldRepetitionCounter = 0 # Reset the counter if the cycles don't match
-    return board.threeFoldRepetitionCounter >= 2
+    currentPosition: str = fen.exportFEN(board = board)
+    currentPositionKey: str = fen.getFENasKey(fen = currentPosition)
+    repetitionCount: int = board.PositionHistoryAsKeys.count(currentPositionKey)
+    if repetitionCount >= 3:
+        logger.info(msg = f"Board: Detected threefold repetition with position {currentPosition} occurring {repetitionCount} times in the game history")
+        return True
+    return False
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
@@ -473,10 +480,12 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
 
     board.moveHighlighting.previousMove = fromSquare
     board.moveHighlighting.currentMove = toSquare
-    moveDataForThreefoldRepetitionCheck: config.MoveData = config.MoveData(fromSquare = fromSquare, toSquare = toSquare, moveType = moveType)
-    board.threeFoldMoveHistory.append(moveDataForThreefoldRepetitionCheck)
     board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
     board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
+    if pieceToMove == config.Piece.PAWN or moveType == config.MoveType.CAPTURE:
+        board.FiftyMoveCounter = 0
+    else:
+        board.FiftyMoveCounter += 1
 
     if moveType == config.MoveType.PROMOTION:
         board.pendingPromotion = config.PromotionData(fromSquare = fromSquare, toSquare = toSquare, moveType = config.MoveType.PROMOTION, colour = colourToMove)
@@ -499,6 +508,10 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
             board.EnPassantTargettableSquare = (-1, -1)
 
     handleCheckStateAfterMove(board = board, colourToMove = colourToMove)
-
+    if colourToMove == config.PieceColour.BLACK:
+        board.FullMoveCounter += 1
     board.changeSideToMove()
+    fenString: str = fen.exportFEN(board = board)
+    board.PositionHistory.append(fenString)
+    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
     updateGameStateAfterMove(board = board)
