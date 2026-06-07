@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 from enum import IntEnum, Enum
 import typing
 
@@ -18,8 +19,14 @@ FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
 FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_SQUARE_CHARACTERS
 
-ASSETS_DIRECTORY: Path = Path(__file__).parent.parent.parent / "assets"
-ASSETS_PIECES_DIRECTORY: Path = ASSETS_DIRECTORY / "pieces"
+def getRelativePathToAssets(assetsDir: str) -> Path:
+    basePath = getattr(sys, "_MEIPASS", None)
+    if basePath is not None:
+        return Path(basePath) / assetsDir
+    return Path(__file__).parent.parent.parent / assetsDir
+
+ASSETS_DIRECTORY: Path = getRelativePathToAssets(assetsDir = "assets")
+ASSETS_PIECES_DIRECTORY: Path = getRelativePathToAssets(assetsDir = "assets/pieces")    
 
 class Piece(IntEnum): # LUT for integer equivalence for chess pieces
     PAWN = 0
