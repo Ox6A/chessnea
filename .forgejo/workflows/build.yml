@@ -69,7 +69,6 @@ jobs:
             wine64 \
             wget \
             xvfb \
-            cabextract \
             unzip \
             file
 
@@ -81,35 +80,36 @@ jobs:
 
       - name: Initialise Wine
         run: |
-          xvfb-run -a wineboot --init
+          xvfb-run -a wineboot --init || true
           sleep 5
 
-      - name: Download Windows Python
+      - name: Download embeddable Windows Python
         run: |
-          wget -O python-installer.exe https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe
+          wget -O python-embed.zip https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
+          mkdir -p winpython
+          unzip python-embed.zip -d winpython
 
-      - name: Install Windows Python in Wine
+      - name: Enable site-packages for embeddable Python
         run: |
-          xvfb-run -a wine python-installer.exe /quiet InstallAllUsers=0 TargetDir=C:\\Python310 Include_pip=1 PrependPath=1
-          sleep 5
+          sed -i 's/^#import site/import site/' winpython/python310._pth
 
-      - name: Check Windows Python
+      - name: Install pip for embeddable Python
         run: |
-          wine C:\\Python310\\python.exe --version
-          wine C:\\Python310\\python.exe -m pip --version
+          wget -O get-pip.py https://bootstrap.pypa.io/get-pip.py
+          xvfb-run -a wine winpython/python.exe get-pip.py
 
       - name: Install Windows Python packages
         run: |
-          wine C:\\Python310\\python.exe -m pip install --upgrade pip
-          wine C:\\Python310\\python.exe -m pip install pyinstaller
+          xvfb-run -a wine winpython/python.exe -m pip install --upgrade pip
+          xvfb-run -a wine winpython/python.exe -m pip install pyinstaller
 
           if [ -f requirements.txt ]; then
-            wine C:\\Python310\\python.exe -m pip install -r requirements.txt
+            xvfb-run -a wine winpython/python.exe -m pip install -r requirements.txt
           fi
 
       - name: Build Windows executable with PyInstaller
         run: |
-          wine C:\\Python310\\Scripts\\pyinstaller.exe \
+          xvfb-run -a wine winpython/Scripts/pyinstaller.exe \
             --onefile \
             --name chessnea-windows \
             --paths src \
