@@ -205,6 +205,23 @@ class PseudoLegalMovesForPieceType():
                 elif targetPiece != config.Piece.KING and targetColour != currentColour:
                     validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetRow, targetCol), moveType = config.MoveType.CAPTURE))
                 targetRow, targetCol = targetRow + i[0], targetCol + i[1]
+
+        # Castling moves
+        if currentColour == config.PieceColour.WHITE and row == 7 and col == 4:
+            if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights and board.Board[7][7] == (config.Piece.ROOK, config.PieceColour.WHITE):
+                if board.Board[7][5][0] == config.Piece.EMPTY and board.Board[7][6][0] == config.Piece.EMPTY:
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 6), moveType = config.MoveType.CASTLING))
+            if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights and board.Board[7][0] == (config.Piece.ROOK, config.PieceColour.WHITE):
+                if board.Board[7][1][0] == config.Piece.EMPTY and board.Board[7][2][0] == config.Piece.EMPTY and board.Board[7][3][0] == config.Piece.EMPTY:
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 2), moveType = config.MoveType.CASTLING))
+        elif currentColour == config.PieceColour.BLACK and row == 0 and col == 4:
+            if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights and board.Board[0][7] == (config.Piece.ROOK, config.PieceColour.BLACK):
+                if board.Board[0][5][0] == config.Piece.EMPTY and board.Board[0][6][0] == config.Piece.EMPTY:
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 6), moveType = config.MoveType.CASTLING))
+            if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights and board.Board[0][0] == (config.Piece.ROOK, config.PieceColour.BLACK):
+                if board.Board[0][1][0] == config.Piece.EMPTY and board.Board[0][2][0] == config.Piece.EMPTY and board.Board[0][3][0] == config.Piece.EMPTY:
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 2), moveType = config.MoveType.CASTLING))
+
         return validMoves
 
 def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
@@ -214,22 +231,22 @@ def getPseudoLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> lis
         return []
     elif board.Board[row][col][0] == config.Piece.PAWN:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for pawn at square {(row, col)}")
-        moves =  PseudoLegalMovesForPieceType.pawn(board, row, col)
+        moves =  PseudoLegalMovesForPieceType.pawn(board = board, row = row, col = col)
     elif board.Board[row][col][0] == config.Piece.BISHOP:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for bishop at square {(row, col)}")
-        moves = PseudoLegalMovesForPieceType.bishop(board, row, col)
+        moves = PseudoLegalMovesForPieceType.bishop(board = board, row = row, col = col)
     elif board.Board[row][col][0] == config.Piece.KNIGHT:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for knight at square {(row, col)}")
-        moves = PseudoLegalMovesForPieceType.knight(board, row, col)
+        moves = PseudoLegalMovesForPieceType.knight(board = board, row = row, col = col)
     elif board.Board[row][col][0] == config.Piece.ROOK:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for rook at square {(row, col)}")
-        moves = PseudoLegalMovesForPieceType.rook(board, row, col)
+        moves = PseudoLegalMovesForPieceType.rook(board = board, row = row, col = col)
     elif board.Board[row][col][0] == config.Piece.QUEEN:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for queen at square {(row, col)}")
-        moves = PseudoLegalMovesForPieceType.queen(board, row, col)
+        moves = PseudoLegalMovesForPieceType.queen(board = board, row = row, col = col)
     elif board.Board[row][col][0] == config.Piece.KING:
         logger.debug(msg = f"Board: Getting pseudo-legal moves for king at square {(row, col)}")
-        moves = PseudoLegalMovesForPieceType.king(board, row, col)
+        moves = PseudoLegalMovesForPieceType.king(board = board, row = row, col = col)
     else:
         logger.error(msg = f"Board: Invalid piece type {board.Board[row][col][0]} at square {(row, col)}")
     return moves
@@ -324,17 +341,17 @@ class squareAttackChecking():
 
 def isSquareAttacked(board: BoardHandling, targetSquare: tuple[int, int], attackingColour: config.PieceColour) -> bool:
     # Check for attacks
-    if squareAttackChecking.pawn(board, targetSquare, attackingColour):
+    if squareAttackChecking.pawn(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
-    if squareAttackChecking.bishop(board, targetSquare, attackingColour):
+    if squareAttackChecking.bishop(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
-    if squareAttackChecking.knight(board, targetSquare, attackingColour):
+    if squareAttackChecking.knight(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
-    if squareAttackChecking.rook(board, targetSquare, attackingColour):
+    if squareAttackChecking.rook(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
-    if squareAttackChecking.queen(board, targetSquare, attackingColour):
+    if squareAttackChecking.queen(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
-    if squareAttackChecking.king(board, targetSquare, attackingColour):
+    if squareAttackChecking.king(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
         return True
     return False
 
@@ -347,9 +364,35 @@ def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[conf
     if sourceColour != board.SideToMove:
         logger.error(msg = f"Board: Attempting to get legal moves for piece of colour {sourceColour.name} when it is {board.SideToMove.name}'s turn to move")
         return []
-    pseudoLegalMoves: list[config.MoveData] = getPseudoLegalMovesForPiece(board, row, col)
+    pseudoLegalMoves: list[config.MoveData] = getPseudoLegalMovesForPiece(board = board, row = row, col = col)
     legalMoves: list[config.MoveData] = []
     for pseudoMove in pseudoLegalMoves:
+        if pseudoMove.moveType == config.MoveType.CASTLING:
+            enemyColour = board.findOpposingColour(colour = sourceColour)
+            if isSquareAttacked(board = board, targetSquare = pseudoMove.fromSquare, attackingColour = enemyColour) or isSquareAttacked(board = board, targetSquare = pseudoMove.toSquare, attackingColour = enemyColour):
+                continue
+            squaresToMove: int
+            if pseudoMove.toSquare[1] == 6: # Kingside castling
+                squaresToMove = 2
+            else: # Queenside castling
+                squaresToMove = -2
+            attemptedCastleThroughCheck: bool = False
+            for i in range(1, abs(squaresToMove) + 1): # Check all squares the king moves through for attacks
+                new_i: int
+                if squaresToMove > 0:
+                    new_i = i
+                else:
+                    new_i = -i
+                intermediateSquare: tuple[int, int] = (row, col + new_i)
+                if isSquareAttacked(board = board, targetSquare = intermediateSquare, attackingColour = enemyColour):
+                    attemptedCastleThroughCheck = True
+                    break
+            if attemptedCastleThroughCheck:
+                continue
+            else:
+                legalMoves.append(pseudoMove)
+                continue
+
         targetRow, targetCol, moveType = pseudoMove.toSquare[0], pseudoMove.toSquare[1], pseudoMove.moveType
         tempBoardHandling = BoardHandling()
         tempBoard: list[list[tuple[config.Piece, config.PieceColour]]] = []
@@ -392,7 +435,7 @@ def updateGameStateAfterMove(board: BoardHandling) -> None:
         logger.info(msg = f"Board: Game drawn by threefold repetition")
         return
 
-    legalMoves: list[config.MoveData] = getAllLegalMovesForSide(board, colour = board.SideToMove)
+    legalMoves: list[config.MoveData] = getAllLegalMovesForSide(board = board, colour = board.SideToMove)
     if len(legalMoves) == 0:
         if board.checkState.inCheck and board.checkState.colourInCheck == board.SideToMove:
             board.gameState.gameOver = True
@@ -413,8 +456,42 @@ def updateGameStateAfterMove(board: BoardHandling) -> None:
         board.gameState.reason = config.GameOverReason.FIFTY_MOVE_RULE
         logger.info(msg = f"Board: Game drawn by fifty-move rule")
         return
-    
-    
+
+def updateCastlingRightsAfterMove(board: BoardHandling, pieceToMove: config.Piece, colourToMove: config.PieceColour, fromSquare: tuple[int, int], toSquare: tuple[int, int], capturedPiece: config.Piece, capturedColour: config.PieceColour) -> None:
+    if pieceToMove == config.Piece.KING:
+        if colourToMove == config.PieceColour.WHITE:
+            if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_KINGSIDE)
+            if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_QUEENSIDE)
+        else:
+            if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
+            if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_QUEENSIDE)
+    elif pieceToMove == config.Piece.ROOK:
+        if colourToMove == config.PieceColour.WHITE:
+            if fromSquare == (7, 0) and config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_QUEENSIDE)
+            elif fromSquare == (7, 7) and config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_KINGSIDE)
+        else:
+            if fromSquare == (0, 0) and config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_QUEENSIDE)
+            elif fromSquare == (0, 7) and config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
+
+    if capturedPiece == config.Piece.ROOK:
+        if capturedColour == config.PieceColour.WHITE:
+            if toSquare == (7, 0) and config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_QUEENSIDE)
+            elif toSquare == (7, 7) and config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.WHITE_KINGSIDE)
+        else:
+            if toSquare == (0, 0) and config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_QUEENSIDE)
+            elif toSquare == (0, 7) and config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
+                board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
 
 def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) -> None:
     if board.pendingPromotion is None:
@@ -424,22 +501,25 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
         logger.error(msg = f"Board: Attempting to promote to invalid piece type {promotionPieceType}")
         return
     toRow, toCol, colour = board.pendingPromotion.toSquare[0], board.pendingPromotion.toSquare[1], board.pendingPromotion.colour
+    board.FiftyMoveCounter = 0
     board.Board[toRow][toCol] = (promotionPieceType, colour)
     logger.info(msg = f"Board: Completed promotion to {promotionPieceType.name} {colour.name} at square {(toRow, toCol)}")
+
     board.pendingPromotion = None
     board.EnPassantTargettableSquare = (-1, -1)
     handleCheckStateAfterMove(board = board, colourToMove = colour)
+    if colour == config.PieceColour.BLACK:
+        board.FullMoveCounter += 1
+
+    board.changeSideToMove()
     fenString: str = fen.exportFEN(board = board)
     board.PositionHistory.append(fenString)
     board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
-    if colour == config.PieceColour.BLACK:
-        board.FullMoveCounter += 1
-    board.changeSideToMove()
     updateGameStateAfterMove(board = board)
 
 def handleCheckStateAfterMove(board: BoardHandling, colourToMove: config.PieceColour) -> None:
     enemyColour: config.PieceColour = board.findOpposingColour(colour = colourToMove)
-    kingPosition: tuple[int, int] = findKing(board, sourceColour = enemyColour)
+    kingPosition: tuple[int, int] = findKing(board = board, sourceColour = enemyColour)
     if isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = colourToMove):
         board.checkState.inCheck = True
         board.checkState.square = kingPosition
@@ -480,6 +560,8 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
 
     board.moveHighlighting.previousMove = fromSquare
     board.moveHighlighting.currentMove = toSquare
+    capturedPiece, capturedColour = board.Board[toRow][toCol][0], board.Board[toRow][toCol][1]
+    updateCastlingRightsAfterMove(board = board, pieceToMove = pieceToMove, colourToMove = colourToMove, fromSquare = fromSquare, toSquare = toSquare, capturedPiece = capturedPiece, capturedColour = capturedColour)
     board.Board[toRow][toCol] = board.Board[fromRow][fromCol]
     board.Board[fromRow][fromCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
     if pieceToMove == config.Piece.PAWN or moveType == config.MoveType.CAPTURE:
@@ -498,6 +580,13 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
             board.Board[toRow + 1][toCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
         else:
             board.Board[toRow - 1][toCol] = (config.Piece.EMPTY, config.PieceColour.WHITE)
+    elif moveType == config.MoveType.CASTLING: # Handle castling
+        if toCol == 6: # Kingside castling
+            board.Board[toRow][5] = board.Board[toRow][7]
+            board.Board[toRow][7] = (config.Piece.EMPTY, config.PieceColour.WHITE)
+        else: # Queenside castling
+            board.Board[toRow][3] = board.Board[toRow][0]
+            board.Board[toRow][0] = (config.Piece.EMPTY, config.PieceColour.WHITE)
     board.EnPassantTargettableSquare = (-1, -1) # Reset after every move
     if pieceToMove == config.Piece.PAWN: # Handle pawn logic (setting en passant squares)
         if (fromRow, fromCol) == (toRow + 2, toCol):

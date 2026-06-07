@@ -1,0 +1,127 @@
+name: Build executables
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux executable
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build tools
+        run: |
+          apt-get update
+          apt-get install -y \
+            python3 \
+            python3-venv \
+            python3-pip \
+            libpython3.10 \
+            file
+
+      - name: Build Linux executable with PyInstaller
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          fi
+
+          pyinstaller \
+            --onefile \
+            --name chessnea-linux \
+            --paths src \
+            --add-data "assets:assets" \
+            src/main.py
+
+          chmod +x dist/chessnea-linux
+          file dist/chessnea-linux
+
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: chessnea-linux
+          path: dist/chessnea-linux
+
+  build-windows-wine:
+    name: Build Windows executable with Wine
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Wine and tools
+        run: |
+          apt-get update
+          apt-get install -y \
+            wine64 \
+            wget \
+            xvfb \
+            cabextract \
+            unzip \
+            file
+
+      - name: Set Wine environment
+        run: |
+          echo "WINEPREFIX=$PWD/.wine" >> "$GITHUB_ENV"
+          echo "WINEARCH=win64" >> "$GITHUB_ENV"
+          echo "WINEDEBUG=-all" >> "$GITHUB_ENV"
+
+      - name: Initialise Wine
+        run: |
+          xvfb-run -a wineboot --init
+          sleep 5
+
+      - name: Download Windows Python
+        run: |
+          wget -O python-installer.exe https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe
+
+      - name: Install Windows Python in Wine
+        run: |
+          xvfb-run -a wine python-installer.exe /quiet InstallAllUsers=0 TargetDir=C:\\Python310 Include_pip=1 PrependPath=1
+          sleep 5
+
+      - name: Check Windows Python
+        run: |
+          wine C:\\Python310\\python.exe --version
+          wine C:\\Python310\\python.exe -m pip --version
+
+      - name: Install Windows Python packages
+        run: |
+          wine C:\\Python310\\python.exe -m pip install --upgrade pip
+          wine C:\\Python310\\python.exe -m pip install pyinstaller
+
+          if [ -f requirements.txt ]; then
+            wine C:\\Python310\\python.exe -m pip install -r requirements.txt
+          fi
+
+      - name: Build Windows executable with PyInstaller
+        run: |
+          wine C:\\Python310\\Scripts\\pyinstaller.exe \
+            --onefile \
+            --name chessnea-windows \
+            --paths src \
+            --add-data "assets;assets" \
+            src/main.py
+
+          mkdir -p dist/windows
+          cp dist/chessnea-windows.exe dist/windows/chessnea-windows.exe
+          file dist/windows/chessnea-windows.exe || true
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: chessnea-windows
+          path: dist/windows/chessnea-windows.exe

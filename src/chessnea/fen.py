@@ -111,7 +111,7 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
     else:
         file: str = enPassantTargetSquareFEN[0]
         rank: str = enPassantTargetSquareFEN[1]
-        board.EnPassantTargettableSquare = parseFENCoordinatesToBoardCoordinates(file, rank)
+        board.EnPassantTargettableSquare = parseFENCoordinatesToBoardCoordinates(file = file, rank = rank)
     try:
         board.FiftyMoveCounter = int(fiftyMoveCounterFEN)
         board.FullMoveCounter = int(fullMoveCounterFEN)
@@ -129,10 +129,14 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
             if piece not in config.FEN_VALID_BOARD_CHARACTERS:
                 raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
             if piece in "12345678":
+                if fileIndex + int(piece) > 8:
+                    raise ValueError(f"Invalid FEN: Too many squares in rank {rankIndex + 1}")
                 for i in range(int(piece)):
                     emptyBoard[rankIndex][fileIndex + i] = (config.Piece.EMPTY, config.PieceColour.WHITE)
                 fileIndex += int(piece)
             else:
+                if fileIndex >= 8:
+                    raise ValueError(f"Invalid FEN: Too many squares in rank {rankIndex + 1}")
                 colour: config.PieceColour = config.PieceColour.WHITE
                 if piece.isupper(): # Check char capitalisation before checking for equivalence with internal representation (invalid data)
                     colour = config.PieceColour.WHITE
@@ -157,5 +161,60 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
                         raise ValueError(f"Invalid FEN: Invalid character for piece: {piece}")
                 emptyBoard[rankIndex][fileIndex] = (pieceType, colour)
                 fileIndex += 1
-    logger.debug(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
     board.Board = emptyBoard
+    # Check if the imported position has legal castling positions
+    if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
+        if board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][7] != (config.Piece.ROOK, config.PieceColour.WHITE):
+            logger.error(msg = "FEN: Castling rights for white kingside castling given in FEN, but no king and/or rook in the correct position")
+            board.CastlingRights.remove(config.CastlingRights.WHITE_KINGSIDE)
+    if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
+        if board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][0] != (config.Piece.ROOK, config.PieceColour.WHITE):
+            logger.error(msg = "FEN: Castling rights for white queenside castling given in FEN, but no king and/or rook in the correct position")
+            board.CastlingRights.remove(config.CastlingRights.WHITE_QUEENSIDE)
+    if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
+        if board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][7] != (config.Piece.ROOK, config.PieceColour.BLACK):
+            logger.error(msg = "FEN: Castling rights for black kingside castling given in FEN, but no king and/or rook in the correct position")
+            board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
+    if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
+        if board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][0] != (config.Piece.ROOK, config.PieceColour.BLACK):
+            logger.error(msg = "FEN: Castling rights for black queenside castling given in FEN, but no king and/or rook in the correct position")
+            board.CastlingRights.remove(config.CastlingRights.BLACK_QUEENSIDE)
+
+    # Check if both kings exist
+    whiteKingExists: bool = False
+    blackKingExists: bool = False
+    for row in board.Board:
+        for piece, colour in row:
+            if piece == config.Piece.KING and colour == config.PieceColour.WHITE:
+                whiteKingExists = True
+            elif piece == config.Piece.KING and colour == config.PieceColour.BLACK:
+                blackKingExists = True
+    if not whiteKingExists:
+        logger.error(msg = "FEN: No white king found in the imported position")
+        raise ValueError("No white king found in the imported position")
+    if not blackKingExists:
+        logger.error(msg = "FEN: No black king found in the imported position")
+        raise ValueError("No black king found in the imported position")
+    logger.debug(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
+
+def handleStartingPositionFEN(board: boardHandling.BoardHandling) -> None:
+    # Handle the starting position FEN string separately for readability of main.py
+    logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
+    importFEN(board = board, fen = config.FEN_STARTING_POSITION)
+    
+    # We have to check if the imported FEN is already in check, as to seed our boardHandling.updateGameStateAfterMove() function.
+    enemyColour: config.PieceColour = board.findOpposingColour(colour = board.SideToMove)
+    kingPosition: tuple[int, int] = boardHandling.findKing(board = board, sourceColour = board.SideToMove)
+    if boardHandling.isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = enemyColour):
+        board.checkState.inCheck = True
+        board.checkState.square = kingPosition
+        board.checkState.colourInCheck = board.SideToMove
+    else:
+        board.checkState.inCheck = False
+        board.checkState.square = (-1, -1)
+        board.checkState.colourInCheck = None
+
+    fenString: str = exportFEN(board = board)
+    board.PositionHistory.append(fenString) # Add the starting position to the position history
+    board.PositionHistoryAsKeys.append(getFENasKey(fen = fenString)) # Add the starting position key to the position history keys for threefold
+    boardHandling.updateGameStateAfterMove(board = board)
