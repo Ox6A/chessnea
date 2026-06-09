@@ -144,14 +144,24 @@ class RenderingGradientColours(Enum):
     CHECK_BACKGROUND_CENTRE = (255, 30, 20, 255)
     CHECK_BACKGROUND_EDGE = (120, 45, 35, 40)
 
-# UI - Material Design 1 Baseline Theme (https://www.mdui.org/en/design/1) (accessed 09/06/26, 19:57 GMT)
+# UI - Material Design Palette docs (https://mui.com/material-ui/customization/palette/) (accessed 09/06/26, 19:57 GMT)
 
 class UIColours(Enum):
-    PRIMARY = (98, 0, 238, 255) # Purple 6200EE
-    PRIMARY_VARIANT = (55, 0, 179, 255) # Purple 3700B3
-    SECONDARY = (3, 218, 198, 255) # Blue 03DAC6
-    SECONDARY_VARIANT = (1, 135, 134, 255) # Blue 018786
-    BACKGROUND = (255, 255, 255, 255) # White FFFFFF
+    PRIMARY = (25, 118, 210, 255) # primary.main #1976d2
+    PRIMARY_HOVER = (21, 101, 192, 255) # primary.dark #1565c0
+    PRIMARY_LIGHT = (66, 165, 245, 255) # primary.light #42a5f5
+
+    SURFACE = (255, 255, 255, 255)
+
+    TEXT_PRIMARY = (33, 33, 33, 255)
+    TEXT_ON_PRIMARY = (255, 255, 255, 255)
+
+    SHADOW = (0, 0, 0, 45)
+
+    ERROR = (211, 47, 47, 255) # palette.error.main #d32f2f
+    WARNING = (237, 108, 2, 255) # palette.warning.main #ed6c02
+    INFO = (2, 136, 209, 255) # palette.info.main #0288d1
+    SUCCESS = (46, 125, 50, 255) # palette.success.main #2e7d32
 
 class ItemType(IntEnum):
     BUTTON = 1
