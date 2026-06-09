@@ -3,6 +3,9 @@ from pathlib import Path
 import sys
 from enum import IntEnum, Enum
 import typing
+import logging
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 VERSION: str = "0.0.1"
 FPS: int = 60
@@ -26,7 +29,19 @@ def getRelativePathToAssets(assetsDir: str) -> Path:
     return Path(__file__).parent.parent.parent / assetsDir
 
 ASSETS_DIRECTORY: Path = getRelativePathToAssets(assetsDir = "assets")
-ASSETS_PIECES_DIRECTORY: Path = getRelativePathToAssets(assetsDir = "assets/pieces")    
+ASSETS_PIECES_DIRECTORY: Path = getRelativePathToAssets(assetsDir = "assets/pieces")
+FONT_FAMILY: str = "Roboto"    
+FONT_DIRECTORY: Path = getRelativePathToAssets(assetsDir = f"assets/fonts/{FONT_FAMILY}")
+
+def getFontPath(fontName: str, dir: Path) -> Path:
+    for file in dir.iterdir():
+        if file.is_file() and file.name == fontName:
+            return file
+    logging.error(msg = f"Init: Font file not found: {fontName} in directory {dir}")
+    raise FileNotFoundError(f"Font file not found: {fontName}")
+
+FONT_REGULAR: Path = getFontPath(fontName = f"{FONT_FAMILY}-Regular.ttf", dir = FONT_DIRECTORY)
+FONT_MEDIUM: Path = getFontPath(fontName = f"{FONT_FAMILY}-Medium.ttf", dir = FONT_DIRECTORY)
 
 class Piece(IntEnum): # LUT for integer equivalence for chess pieces
     PAWN = 0
@@ -128,3 +143,21 @@ class RenderingGradientColours(Enum):
     PROMOTION_CHOICE_BACKGROUND_BORDER = (100, 100, 100, 255)
     CHECK_BACKGROUND_CENTRE = (255, 30, 20, 255)
     CHECK_BACKGROUND_EDGE = (120, 45, 35, 40)
+
+# UI - Material Design 1 Baseline Theme (https://www.mdui.org/en/design/1) (accessed 09/06/26, 19:57 GMT)
+
+class UIColours(Enum):
+    PRIMARY = (98, 0, 238, 255) # Purple 6200EE
+    PRIMARY_VARIANT = (55, 0, 179, 255) # Purple 3700B3
+    SECONDARY = (3, 218, 198, 255) # Blue 03DAC6
+    SECONDARY_VARIANT = (1, 135, 134, 255) # Blue 018786
+    BACKGROUND = (255, 255, 255, 255) # White FFFFFF
+
+class ItemType(IntEnum):
+    BUTTON = 1
+
+@dataclass
+class MenuItem():
+    name: str
+    itemType: ItemType
+    children: list[MenuItem] | None

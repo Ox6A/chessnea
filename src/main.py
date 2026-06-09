@@ -1,3 +1,6 @@
+from chessnea.ui import MenuBar
+
+
 from os import environ
 import logging
 import typing
@@ -7,6 +10,7 @@ import chessnea.config as config
 import chessnea.fen as fen
 import chessnea.board as boardHandling
 import chessnea.render as render
+import chessnea.ui as ui
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -24,6 +28,10 @@ def main() -> None:
     board: boardHandling.BoardHandling = boardHandling.BoardHandling()
     _ = board.loadSpritesForBoard()
     renderThreadInstance: render.Rendering = render.Rendering()
+    logger.info(msg = "Init: Starting main UI...")
+    menuBarInstance: MenuBar = ui.MenuBar()
+    menuBarInstance.addMenuItem(item = config.MenuItem(name = "Exit", itemType = config.ItemType.BUTTON, children = None))
+    logger.info(msg = "Init: Started UI initialisation")
     fen.handleStartingPositionFEN(board = board)
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
@@ -76,7 +84,7 @@ def main() -> None:
                     break
         elif not board.pendingPromotion and cursorChanged:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-
+        menuBarInstance.drawMenuBar(screen = screen)
         pygame.display.flip()
         _ = clock.tick(config.FPS)
 
