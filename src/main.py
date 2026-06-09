@@ -37,7 +37,7 @@ def main() -> None:
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
     logger.info(msg = "Init: Started main game loop")
-    cursorChanged: bool = False
+    currentCursor:int = pygame.SYSTEM_CURSOR_ARROW
     while running:
         for event in pygame.event.get():
             targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
@@ -76,14 +76,26 @@ def main() -> None:
         renderThreadInstance.renderBoard(screen = screen, board = board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
         mouseX, mouseY = pygame.mouse.get_pos()
-        if board.pendingPromotion and not cursorChanged:
+        cursorToUse: int = pygame.SYSTEM_CURSOR_ARROW
+        if menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY):
+            cursorToUse = pygame.SYSTEM_CURSOR_HAND
+        elif board.pendingPromotion:
             for uiRect, _ in promotionUIRects:
                 if uiRect.collidepoint(mouseX, mouseY):
-                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-                    cursorChanged = True
+                    cursorToUse = pygame.SYSTEM_CURSOR_HAND
                     break
-        elif not board.pendingPromotion and cursorChanged:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        elif board.piecePickedUp != (-1, -1):
+            cursorToUse = pygame.SYSTEM_CURSOR_HAND
+        elif not board.gameState.gameOver:
+            targetSquareTemp = board.getSquareUnderMousePosition()
+            if targetSquareTemp is not None:
+                row, col = targetSquareTemp
+                piece, colour = board.Board[row][col]
+                if piece != config.Piece.EMPTY and colour == board.SideToMove:
+                    cursorToUse = pygame.SYSTEM_CURSOR_CROSSHAIR
+        if cursorToUse != currentCursor:
+            pygame.mouse.set_cursor(cursorToUse)
+            currentCursor = cursorToUse
         menuBarInstance.drawMenuBar(screen = screen)
         pygame.display.flip()
         _ = clock.tick(config.FPS)

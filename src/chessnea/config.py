@@ -144,24 +144,26 @@ class RenderingGradientColours(Enum):
     CHECK_BACKGROUND_CENTRE = (255, 30, 20, 255)
     CHECK_BACKGROUND_EDGE = (120, 45, 35, 40)
 
-# UI - Material Design Palette docs (https://mui.com/material-ui/customization/palette/) (accessed 09/06/26, 19:57 GMT)
 
+# UI colours from Material Design: https://mui.com/material-ui/customization/color/ (Accessed 09/06/2026)
 class UIColours(Enum):
-    PRIMARY = (25, 118, 210, 255) # primary.main #1976d2
-    PRIMARY_HOVER = (21, 101, 192, 255) # primary.dark #1565c0
-    PRIMARY_LIGHT = (66, 165, 245, 255) # primary.light #42a5f5
+    PRIMARY = (0, 121, 107, 255)           # teal 700 #00796b
+    PRIMARY_HOVER = (0, 105, 92, 255)      # teal 800 #00695c
+    PRIMARY_LIGHT = (77, 182, 172, 255)    # teal 300 #4db6ac
 
-    SURFACE = (255, 255, 255, 255)
+    BACKGROUND = (250, 250, 250, 255)      # grey 50 #fafafa
+    SURFACE = (255, 255, 255, 255)         # white
+    OUTLINE = (224, 224, 224, 255)         # grey 300 #e0e0e0
 
-    TEXT_PRIMARY = (33, 33, 33, 255)
+    TEXT_PRIMARY = (33, 33, 33, 255)       # grey 900 #212121
+    TEXT_SECONDARY = (97, 97, 97, 255)     # grey 700 #616161
     TEXT_ON_PRIMARY = (255, 255, 255, 255)
 
-    SHADOW = (0, 0, 0, 45)
+    SHADOW = (0, 0, 0, 35)
 
-    ERROR = (211, 47, 47, 255) # palette.error.main #d32f2f
-    WARNING = (237, 108, 2, 255) # palette.warning.main #ed6c02
-    INFO = (2, 136, 209, 255) # palette.info.main #0288d1
-    SUCCESS = (46, 125, 50, 255) # palette.success.main #2e7d32
+    ERROR = (211, 47, 47, 255)             # red 700 #d32f2f
+    WARNING = (251, 192, 45, 255)          # yellow 700 #fbc02d
+    SUCCESS = (56, 142, 60, 255)           # green 700 #388e3c
 
 class ItemType(IntEnum):
     BUTTON = 1
