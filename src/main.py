@@ -1,8 +1,3 @@
-from pygame.constants import K_TAB
-
-from chessnea.ui import MenuBar
-
-
 from os import environ
 import logging
 import typing
@@ -31,12 +26,13 @@ def main() -> None:
     _ = board.loadSpritesForBoard()
     renderThreadInstance: render.Rendering = render.Rendering()
     logger.info(msg = "Init: Starting main UI...")
-    menuBarInstance: MenuBar = ui.MenuBar()
+    menuBarInstance: ui.MenuBar = ui.MenuBar()
     menuBarInstance.addMenuItem(
         item = config.MenuItem(name = "Exit", 
             itemType = config.ItemType.BUTTON, 
             children = None, 
-            connector = ui.ConnectorFunctions.exitGame))
+            connector = ui.ConnectorFunctions.exitGame,
+            paddedRight = True))
     logger.info(msg = "Init: Started UI initialisation")
     fen.handleStartingPositionFEN(board = board)
     running: bool = True
@@ -51,13 +47,10 @@ def main() -> None:
             targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:  
                 if event.key == pygame.K_TAB:
                     menuBarInstance.hidden = not menuBarInstance.hidden
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                for i in menuBarInstance.menuItems:
-                    if i.rect == hoveringOverButton:
-                        menuBarInstance.runConnectorFunction(item = i)
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         mouseX, mouseY = pygame.mouse.get_pos()
@@ -77,6 +70,9 @@ def main() -> None:
                             board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
                             logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
+                for i in menuBarInstance.menuItems:
+                    if i.rect == hoveringOverButton and i.rect != None:
+                        menuBarInstance.runConnectorFunction(item = i)
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         continue
