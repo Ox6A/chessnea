@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import pygame
 from pathlib import Path
 import sys
 from enum import IntEnum, Enum
@@ -9,8 +10,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 VERSION: str = "0.0.1"
 FPS: int = 60
-WIDTH: int = 600
-HEIGHT: int = 600
+WIDTH: int = 900
+HEIGHT: int = 900
 BOARD_SIZE: int = 8
 PIECE_SET = "alpha"
 
@@ -172,5 +173,6 @@ class ItemType(IntEnum):
 class MenuItem():
     name: str
     itemType: ItemType
-    children: list[MenuItem] | None
     connector: typing.Callable[[], bool]
+    children: list[MenuItem] | None
+    rect: pygame.Rect | None = None

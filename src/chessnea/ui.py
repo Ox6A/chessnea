@@ -1,3 +1,5 @@
+from re import L
+
 import pygame
 
 import chessnea.config as config
@@ -27,7 +29,6 @@ class MenuBar():
         self.menuItems: list[config.MenuItem] = []
         self.fontRegular: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_REGULAR), size = 24)
         self.fontMedium: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_MEDIUM), size = 24)
-        self.itemRectsForCollision: list[pygame.Rect] = []
 
         # Padding
         self.paddingX: int = 16
@@ -39,11 +40,18 @@ class MenuBar():
     def addMenuItem(self, item: config.MenuItem) -> None:
         self.menuItems.append(item)
 
-    def checkIfHoveringOverMenuItem(self, mouseX: int, mouseY: int) -> bool:
-        for i in self.itemRectsForCollision:
-            if i.collidepoint((mouseX, mouseY)):
-                return True
-        return False
+    def checkIfHoveringOverMenuItem(self, mouseX: int, mouseY: int) -> pygame.Rect | None:
+        if self.menuItems == []:
+            return None
+        for i in self.menuItems:
+            if not i.rect:
+                continue
+            if i.rect.collidepoint((mouseX, mouseY)):
+                return i.rect
+        return None
+
+    def runConnectorFunction(self, item: config.MenuItem) -> None:
+        _ =item.connector()
 
     def drawMenuBar(self, screen: pygame.Surface) -> None:
         if self.hidden:
@@ -77,7 +85,7 @@ class MenuBar():
                 rect = itemRect,
                 radius = self.radius
             )
-            self.itemRectsForCollision.append(rectToSave)
+            item.rect = rectToSave
             textRect: pygame.Rect = itemText.get_rect(center = itemRect.center)
             _ = menuBarSurface.blit(source = itemText, dest = textRect)
             offsetXForItem += itemWidth + self.itemGap
