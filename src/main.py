@@ -1,3 +1,5 @@
+from pygame.constants import K_TAB
+
 from chessnea.ui import MenuBar
 
 
@@ -43,11 +45,19 @@ def main() -> None:
     logger.info(msg = "Init: Started main game loop")
     currentCursor:int = pygame.SYSTEM_CURSOR_ARROW
     while running:
+        mouseX, mouseY = pygame.mouse.get_pos()
+        hoveringOverButton: pygame.Rect | None = menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
         for event in pygame.event.get():
             targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_TAB:
+                    menuBarInstance.hidden = not menuBarInstance.hidden
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                for i in menuBarInstance.menuItems:
+                    if i.rect == hoveringOverButton:
+                        menuBarInstance.runConnectorFunction(item = i)
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         mouseX, mouseY = pygame.mouse.get_pos()
@@ -79,9 +89,9 @@ def main() -> None:
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen = screen, board = board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
-        mouseX, mouseY = pygame.mouse.get_pos()
+
         cursorToUse: int = pygame.SYSTEM_CURSOR_ARROW
-        if menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY):
+        if hoveringOverButton:
             cursorToUse = pygame.SYSTEM_CURSOR_HAND
         elif board.pendingPromotion:
             for uiRect, _ in promotionUIRects:
