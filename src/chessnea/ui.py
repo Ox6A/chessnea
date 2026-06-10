@@ -20,7 +20,7 @@ def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, 
 
 class MenuBar():
     def __init__(self)  -> None:
-        self.hidden: bool = False
+        self.hidden: bool = True
         self.height: int = 64
         self.width: int = config.WIDTH
         self.hideTimeout: float = 0.5
@@ -91,3 +91,8 @@ class MenuBar():
         )
 
         _ = screen.blit(source = menuBarSurface, dest = (0, 0))
+
+class ConnectorFunctions():
+    @staticmethod
+    def exitGame() -> bool:
+        exit()

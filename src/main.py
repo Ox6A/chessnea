@@ -30,7 +30,11 @@ def main() -> None:
     renderThreadInstance: render.Rendering = render.Rendering()
     logger.info(msg = "Init: Starting main UI...")
     menuBarInstance: MenuBar = ui.MenuBar()
-    menuBarInstance.addMenuItem(item = config.MenuItem(name = "Exit", itemType = config.ItemType.BUTTON, children = None))
+    menuBarInstance.addMenuItem(
+        item = config.MenuItem(name = "Exit", 
+            itemType = config.ItemType.BUTTON, 
+            children = None, 
+            connector = ui.ConnectorFunctions.exitGame))
     logger.info(msg = "Init: Started UI initialisation")
     fen.handleStartingPositionFEN(board = board)
     running: bool = True

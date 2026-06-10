@@ -9,8 +9,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 VERSION: str = "0.0.1"
 FPS: int = 60
-WIDTH: int = 1200
-HEIGHT: int = 1200
+WIDTH: int = 600
+HEIGHT: int = 600
 BOARD_SIZE: int = 8
 PIECE_SET = "alpha"
 
@@ -173,3 +173,4 @@ class MenuItem():
     name: str
     itemType: ItemType
     children: list[MenuItem] | None
+    connector: typing.Callable[[], bool]
