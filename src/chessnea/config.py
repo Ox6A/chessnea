@@ -146,25 +146,50 @@ class RenderingGradientColours(Enum):
     CHECK_BACKGROUND_EDGE = (120, 45, 35, 40)
 
 
-# UI colours from Material Design: https://mui.com/material-ui/customization/color/ (Accessed 09/06/2026)
+# UI colours from Material Design: https://mui.com/material-ui/customization/dark-mode/ (Accessed 10/06/2026)
+# (https://raw.githubusercontent.com/mui/material-ui/master/packages/mui-material/src/styles/createPalette.js)
+# class UIColours(Enum):
+#     PRIMARY = (0, 121, 107, 255)           # teal 700 #00796b
+#     PRIMARY_HOVER = (0, 105, 92, 255)      # teal 800 #00695c
+#     PRIMARY_LIGHT = (77, 182, 172, 255)    # teal 300 #4db6ac
+
+#     BACKGROUND = (250, 250, 250, 255)      # grey 50 #fafafa
+#     SURFACE = (255, 255, 255, 255)         # white
+#     OUTLINE = (224, 224, 224, 255)         # grey 300 #e0e0e0
+
+#     TEXT_PRIMARY = (33, 33, 33, 255)       # grey 900 #212121
+#     TEXT_SECONDARY = (97, 97, 97, 255)     # grey 700 #616161
+#     TEXT_ON_PRIMARY = (255, 255, 255, 255)
+
+#     SHADOW = (0, 0, 0, 35)
+
+#     ERROR = (211, 47, 47, 255)             # red 700 #d32f2f
+#     WARNING = (251, 192, 45, 255)          # yellow 700 #fbc02d
+#     SUCCESS = (56, 142, 60, 255)           # green 700 #388e3c
+
 class UIColours(Enum):
-    PRIMARY = (0, 121, 107, 255)           # teal 700 #00796b
-    PRIMARY_HOVER = (0, 105, 92, 255)      # teal 800 #00695c
-    PRIMARY_LIGHT = (77, 182, 172, 255)    # teal 300 #4db6ac
+    PRIMARY = (144, 202, 249, 255)          # blue 200 #90caf9
+    PRIMARY_HOVER = (66, 165, 245, 255)     # blue 400 #42a5f5
+    PRIMARY_LIGHT = (227, 242, 253, 255)    # blue 50 #e3f2fd
 
-    BACKGROUND = (250, 250, 250, 255)      # grey 50 #fafafa
-    SURFACE = (255, 255, 255, 255)         # white
-    OUTLINE = (224, 224, 224, 255)         # grey 300 #e0e0e0
+    BACKGROUND = (18, 18, 18, 255)          # #121212
+    SURFACE = (18, 18, 18, 255)             # #121212
+    OUTLINE = (180, 180, 180, 255)           # rgba(255, 255, 255, 0.12) changed
 
-    TEXT_PRIMARY = (33, 33, 33, 255)       # grey 900 #212121
-    TEXT_SECONDARY = (97, 97, 97, 255)     # grey 700 #616161
-    TEXT_ON_PRIMARY = (255, 255, 255, 255)
+    TEXT_PRIMARY = (255, 255, 255, 255)     # #FFFFFF
+    TEXT_SECONDARY = (255, 255, 255, 179)   # rgba(255, 255, 255, 0.7)
+    TEXT_DISABLED = (255, 255, 255, 128)    # rgba(255, 255, 255, 0.5)
+    TEXT_ON_PRIMARY = (0, 0, 0, 222)        # rgba(0, 0, 0, 0.87)
 
-    SHADOW = (0, 0, 0, 35)
+    ACTION_ACTIVE = (255, 255, 255, 255)    # #FFFFFF
+    ACTION_HOVER = (37, 37, 37, 255)      # rgba(255, 255, 255, 0.08) changed
+    ACTION_SELECTED = (56, 56, 56, 255)   # rgba(255, 255, 255, 0.16) changed
 
-    ERROR = (211, 47, 47, 255)             # red 700 #d32f2f
-    WARNING = (251, 192, 45, 255)          # yellow 700 #fbc02d
-    SUCCESS = (56, 142, 60, 255)           # green 700 #388e3c
+    SHADOW = (0, 0, 0, 80)
+
+    ERROR = (244, 67, 54, 255)              # red 500 #f44336
+    WARNING = (255, 167, 38, 255)           # orange 400 #ffa726
+    SUCCESS = (102, 187, 106, 255)          # green 400 #66bb6a
 
 class ItemType(IntEnum):
     BUTTON = 1
@@ -176,3 +201,5 @@ class MenuItem():
     connector: typing.Callable[[], bool]
     children: list[MenuItem] | None
     rect: pygame.Rect | None = None
+    pressed: bool = False
+    paddedRight: bool = False

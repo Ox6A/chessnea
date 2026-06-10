@@ -1,5 +1,3 @@
-from re import L
-
 import pygame
 
 import chessnea.config as config
@@ -23,7 +21,7 @@ def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, 
 class MenuBar():
     def __init__(self)  -> None:
         self.hidden: bool = True
-        self.height: int = 64
+        self.height: int = 50
         self.width: int = config.WIDTH
         self.hideTimeout: float = 0.5
         self.menuItems: list[config.MenuItem] = []
@@ -34,14 +32,14 @@ class MenuBar():
         self.paddingX: int = 16
         self.paddingY: int = 16
         self.itemHeight: int = 40
-        self.itemGap: int = 8
+        self.itemGap: int = 0
         self.radius: int = 8
 
     def addMenuItem(self, item: config.MenuItem) -> None:
         self.menuItems.append(item)
 
     def checkIfHoveringOverMenuItem(self, mouseX: int, mouseY: int) -> pygame.Rect | None:
-        if self.menuItems == []:
+        if self.menuItems == [] or self.hidden == True:
             return None
         for i in self.menuItems:
             if not i.rect:
@@ -51,44 +49,68 @@ class MenuBar():
         return None
 
     def runConnectorFunction(self, item: config.MenuItem) -> None:
-        _ =item.connector()
+        _ = item.connector()
 
     def drawMenuBar(self, screen: pygame.Surface) -> None:
         if self.hidden:
             return
         mouseX, mouseY = pygame.mouse.get_pos()
         menuBarSurface: pygame.Surface = pygame.Surface(size = (self.width, self.height), flags = pygame.SRCALPHA)
-        _ = menuBarSurface.fill(color = config.UIColours.PRIMARY_LIGHT.value)
+        _ = menuBarSurface.fill(color = config.UIColours.SURFACE.value)
 
-        offsetXForItem: int = self.paddingX
+        offsetXForItem: int = 0
 
         for item in self.menuItems:
             itemText: pygame.Surface = self.fontMedium.render(
                 text = item.name, 
                 antialias = True, 
-                color = config.UIColours.TEXT_ON_PRIMARY.value)
+                color = config.UIColours.TEXT_PRIMARY.value)
             itemWidth: int = itemText.get_width() + (self.paddingX * 2)
-            itemY: int = (self.height - self.itemHeight) // 2
-
-            itemRect: pygame.Rect = pygame.Rect(offsetXForItem, itemY, itemWidth, self.itemHeight)
+            itemRect: pygame.Rect
+            if item.paddedRight:
+                itemRect = pygame.Rect(self.width - offsetXForItem - itemWidth, 0, itemWidth, self.height)
+            else:
+                itemRect = pygame.Rect(offsetXForItem, 0, itemWidth, self.height)
             isHovered: bool = itemRect.collidepoint(mouseX, mouseY)
+            isPressed: bool
+            if isHovered and pygame.mouse.get_pressed(num_buttons = 3)[0]:
+                isPressed = True
+            else:
+                isPressed = False
 
             buttonColour: tuple[int, int, int, int]
-            if isHovered:
-                buttonColour = config.UIColours.PRIMARY_HOVER.value
+            if isPressed:
+                buttonColour = config.UIColours.ACTION_SELECTED.value
+            elif isHovered:
+                buttonColour = config.UIColours.ACTION_HOVER.value
             else:
-                buttonColour = config.UIColours.PRIMARY.value
+                buttonColour = config.UIColours.SURFACE.value
 
-            rectToSave = drawSmoothRoundedRect(
+            _ = pygame.draw.rect(
                 surface = menuBarSurface,
-                colour = buttonColour,
-                rect = itemRect,
-                radius = self.radius
+                color = buttonColour,
+                rect = itemRect
             )
-            item.rect = rectToSave
+            item.rect = itemRect
             textRect: pygame.Rect = itemText.get_rect(center = itemRect.center)
             _ = menuBarSurface.blit(source = itemText, dest = textRect)
             offsetXForItem += itemWidth + self.itemGap
+            if item.paddedRight:
+                _ = pygame.draw.line(
+                    surface = menuBarSurface,
+                    color = config.UIColours.OUTLINE.value,
+                    start_pos = (self.width - offsetXForItem, 0),
+                    end_pos = (self.width - offsetXForItem, self.height),
+                    width = 2
+                )
+            else:
+                _ = pygame.draw.line(
+                    surface = menuBarSurface,
+                    color = config.UIColours.OUTLINE.value,
+                    start_pos = (offsetXForItem, 0),
+                    end_pos = (offsetXForItem, self.height),
+                    width = 2
+                )
 
         _ = pygame.draw.line(
             surface = menuBarSurface,
