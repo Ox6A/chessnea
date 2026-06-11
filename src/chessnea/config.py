@@ -201,7 +201,7 @@ class MenuItem():
     name: str
     itemType: ItemType
     connector: typing.Callable[[], bool]
-    children: list[MenuItem] | None
+    children: list["MenuItem"] | None
     rect: pygame.Rect | None = None
     pressed: bool = False
     paddedRight: bool = False
