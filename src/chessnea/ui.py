@@ -17,7 +17,7 @@ def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, 
     smoothSurface: pygame.Surface = pygame.transform.smoothscale(surface = enlargedSurface, size = (rect.width, rect.height))
     return surface.blit(source = smoothSurface, dest = rect)
 
-def addStandardUIItems(menuBarInstance: MenuBar) -> None:
+def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
     # Exit
     menuBarInstance.addMenuItem(
         item = config.MenuItem(
