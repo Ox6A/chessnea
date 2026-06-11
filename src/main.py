@@ -27,12 +27,7 @@ def main() -> None:
     renderThreadInstance: render.Rendering = render.Rendering()
     logger.info(msg = "Init: Starting main UI...")
     menuBarInstance: ui.MenuBar = ui.MenuBar()
-    menuBarInstance.addMenuItem(
-        item = config.MenuItem(name = "Exit", 
-            itemType = config.ItemType.BUTTON, 
-            children = None, 
-            connector = ui.ConnectorFunctions.exitGame,
-            paddedRight = True))
+    ui.addStandardUIItems(menuBarInstance = menuBarInstance)
     logger.info(msg = "Init: Started UI initialisation")
     fen.handleStartingPositionFEN(board = board)
     running: bool = True
@@ -42,7 +37,7 @@ def main() -> None:
     currentCursor:int = pygame.SYSTEM_CURSOR_ARROW
     while running:
         mouseX, mouseY = pygame.mouse.get_pos()
-        hoveringOverButton: pygame.Rect | None = menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
+        hoveringOverButton: config.MenuItem | None = menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
         for event in pygame.event.get():
             targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
             if event.type == pygame.QUIT:
@@ -70,9 +65,15 @@ def main() -> None:
                             board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
                             logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
-                for i in menuBarInstance.menuItems:
-                    if i.rect == hoveringOverButton and i.rect != None:
-                        menuBarInstance.runConnectorFunction(item = i)
+                if hoveringOverButton:
+                    if hoveringOverButton.children and menuBarInstance.openItem == hoveringOverButton:
+                        menuBarInstance.openItem = None
+                    elif hoveringOverButton.children:
+                        menuBarInstance.openItem = hoveringOverButton
+                    else:
+                        menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                        menuBarInstance.openItem = None
+                    continue
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         continue

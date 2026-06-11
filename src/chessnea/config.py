@@ -193,6 +193,8 @@ class UIColours(Enum):
 
 class ItemType(IntEnum):
     BUTTON = 1
+    DROPDOWN = 2
+    TOGGLE = 3
 
 @dataclass
 class MenuItem():
