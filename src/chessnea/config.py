@@ -88,6 +88,11 @@ class PromotionalPieces(IntEnum): # LUT for integer equivalence of pieces that a
     ROOK = 3
     QUEEN = 4
 
+class ReturnType(Enum):
+    NORMAL = 1
+    ERROR = 2
+    QUIT_GAME = 3
+
 @dataclass
 class MoveHighlighting():
     currentMove: tuple[int, int] = (-1, -1)
@@ -202,10 +207,9 @@ class ItemType(IntEnum):
 class MenuItem():
     name: str
     itemType: ItemType
-    connector: typing.Callable[[], bool]
+    connector: typing.Callable[[], ReturnType]
     children: list["MenuItem"] | None
     rect: pygame.Rect | None = None
     pressed: bool = False
     toggled: bool = False
     paddedRight: bool = False
-

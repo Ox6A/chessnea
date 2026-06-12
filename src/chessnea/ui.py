@@ -48,7 +48,7 @@ def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
                     connector = ConnectorFunctions.setFlipBoard
                 )
             ],
-            connector = lambda: False)
+            connector = lambda: config.ReturnType.NORMAL)
         )
 
 class MenuBar():
@@ -89,8 +89,8 @@ class MenuBar():
                         return childItem
         return None
 
-    def runConnectorFunction(self, item: config.MenuItem) -> None:
-        _ = item.connector()
+    def runConnectorFunction(self, item: config.MenuItem) -> config.ReturnType:
+        return item.connector()
 
     def drawMenuBar(self, screen: pygame.Surface) -> None:
         if self.hidden:
@@ -217,12 +217,12 @@ class MenuBar():
 
 class ConnectorFunctions():
     @staticmethod
-    def exitGame() -> bool:
-        exit()
+    def exitGame() -> config.ReturnType:
+        return config.ReturnType.QUIT_GAME
 
     @staticmethod
-    def setFlipBoard() -> bool:
+    def setFlipBoard() -> config.ReturnType:
         logging.info(msg = f"ConnectorFunctions: Toggled board flipping to value {not boardInstance.isBoardFlippingEnabled}")
         boardInstance.isBoardFlippingEnabled = not boardInstance.isBoardFlippingEnabled
         boardInstance.syncBoardFlipStateToSideToMove()
-        return boardInstance.isBoardFlipped
+        return config.ReturnType.NORMAL
