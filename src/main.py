@@ -77,9 +77,11 @@ def main() -> None:
                     else:
                         if hoveringOverButton.itemType == config.ItemType.TOGGLE:
                             hoveringOverButton.toggled = not hoveringOverButton.toggled
-                            menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            _ = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
                         else:
-                            menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            returnType = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            if returnType == config.ReturnType.QUIT_GAME:
+                                running = False
                             menuBarInstance.openItem = None
                     continue
                 if not board.gameState.gameOver:
