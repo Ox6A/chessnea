@@ -184,6 +184,8 @@ class UIColours(Enum):
     ACTION_ACTIVE = (255, 255, 255, 255)    # #FFFFFF
     ACTION_HOVER = (37, 37, 37, 255)      # rgba(255, 255, 255, 0.08) changed
     ACTION_SELECTED = (56, 56, 56, 255)   # rgba(255, 255, 255, 0.16) changed
+    ACTION_TOGGLED = (25, 118, 210, 255)
+    ACTION_SELECTED_OVER_TOGGLED = (21, 101, 192, 255)
 
     SHADOW = (0, 0, 0, 80)
 
@@ -204,4 +206,6 @@ class MenuItem():
     children: list["MenuItem"] | None
     rect: pygame.Rect | None = None
     pressed: bool = False
+    toggled: bool = False
     paddedRight: bool = False
+

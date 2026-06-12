@@ -1,6 +1,15 @@
 import pygame
+import logging
 
+from chessnea.board import BoardHandling
 import chessnea.config as config
+
+boardInstance: BoardHandling
+logger: logging.Logger = logging.getLogger(name = __name__)
+
+def loadBoardInUI(board: BoardHandling) -> None:
+    global boardInstance
+    boardInstance = board
 
 def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, int], rect: pygame.Rect, radius: int) -> pygame.Rect:
     scaleFactor: int = 4
@@ -114,8 +123,13 @@ class MenuBar():
             buttonColour: tuple[int, int, int, int]
             if isPressed:
                 buttonColour = config.UIColours.ACTION_SELECTED.value
+            elif isHovered and item.toggled:
+                buttonColour = config.UIColours.ACTION_SELECTED_OVER_TOGGLED.value
             elif isHovered:
                 buttonColour = config.UIColours.ACTION_HOVER.value
+            elif item.toggled:
+                buttonColour = config.UIColours.ACTION_TOGGLED.value
+                print(1)
             else:
                 buttonColour = config.UIColours.SURFACE.value
 
@@ -168,8 +182,12 @@ class MenuBar():
                     )
                     childItemColour: tuple[int, int, int, int]
                     childItemHovered: bool = childItemRect.collidepoint((mouseX, mouseY))
-                    if childItemHovered:
+                    if childItem.toggled and childItemHovered:
+                        childItemColour = config.UIColours.ACTION_SELECTED_OVER_TOGGLED.value
+                    elif childItemHovered:
                         childItemColour = config.UIColours.ACTION_HOVER.value
+                    elif childItem.toggled:
+                        childItemColour = config.UIColours.ACTION_TOGGLED.value
                     else:
                         childItemColour = config.UIColours.SURFACE.value
                     _ = pygame.draw.rect(
@@ -204,4 +222,7 @@ class ConnectorFunctions():
 
     @staticmethod
     def setFlipBoard() -> bool:
-        exit()
+        logging.info(msg = f"ConnectorFunctions: Toggled board flipping to value {not boardInstance.isBoardFlippingEnabled}")
+        boardInstance.isBoardFlippingEnabled = not boardInstance.isBoardFlippingEnabled
+        boardInstance.syncBoardFlipStateToSideToMove()
+        return boardInstance.isBoardFlipped

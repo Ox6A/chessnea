@@ -29,7 +29,21 @@ class BoardHandling():
         self.gameState: config.GameState = config.GameState() # Store game state
         self.PositionHistory: list[str] = [] # Store move history as FEN strings
         self.PositionHistoryAsKeys: list[str] = [] # Store move history as FEN strings when checking for threefold repetition
+        self.isBoardFlipped: bool = False
+        self.isBoardFlippingEnabled: bool = False
         
+    def getDisplaySquare(self, square: tuple[int, int]) -> tuple[int, int]:
+        if square == (-1, -1): return square
+        if self.isBoardFlipped:
+            return (7 - square[0], 7 - square[1])
+        return square
+
+    def syncBoardFlipStateToSideToMove(self) -> None:
+        if self.isBoardFlippingEnabled and self.SideToMove == config.PieceColour.BLACK:
+            self.isBoardFlipped = True
+        else:
+            self.isBoardFlipped = False
+
     def loadSpritesForBoard(self) -> None:
         self.sprites = assets.loadSprites()
 
@@ -39,7 +53,7 @@ class BoardHandling():
         col: int = mouseX // config.WIDTH_PER_SQUARE
         row: int = mouseY // config.HEIGHT_PER_SQUARE
         if 0 <= row < 8 and 0 <= col < 8:
-            return (row, col)
+            return self.getDisplaySquare(square = (row, col))
         else:
             return None
     
@@ -539,10 +553,10 @@ def checkForThreefoldRepetition(board: BoardHandling) -> bool:
         return True
     return False
 
-def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> None:
+def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> bool:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
     if (fromRow, fromCol) == (toRow, toCol) or fromRow == -1 or fromCol == -1 or toRow == -1 or toCol == -1:
-        return # If an empty move; we exit
+        return False # If an empty move; we exit
     moves: list[config.MoveData] = getLegalMovesForPiece(board, row = fromRow, col = fromCol)
     pieceToMove, colourToMove = board.Board[fromRow][fromCol][0], board.Board[fromRow][fromCol][1]
 
@@ -555,7 +569,7 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
             break
     if moveType is None:
         logger.warning(msg = f"Board: Rejecting invalid move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}")
-        return
+        return False
     logger.info(msg = f"Board: Processing move from {fromSquare} to {toSquare} for piece {board.Board[fromRow][fromCol][0].name} {board.Board[fromRow][fromCol][1].name}, Type: {moveType.name}")
 
     board.moveHighlighting.previousMove = fromSquare
@@ -572,7 +586,7 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
     if moveType == config.MoveType.PROMOTION:
         board.pendingPromotion = config.PromotionData(fromSquare = fromSquare, toSquare = toSquare, moveType = config.MoveType.PROMOTION, colour = colourToMove)
         board.EnPassantTargettableSquare = (-1, -1)
-        return
+        return True
 
     # Begin other move type processing
     if moveType == config.MoveType.EN_PASSANT: # Handle en passant
@@ -604,3 +618,4 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
     board.PositionHistory.append(fenString)
     board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
     updateGameStateAfterMove(board = board)
+    return True
