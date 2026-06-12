@@ -28,6 +28,7 @@ def main() -> None:
     logger.info(msg = "Init: Starting main UI...")
     menuBarInstance: ui.MenuBar = ui.MenuBar()
     ui.addStandardUIItems(menuBarInstance = menuBarInstance)
+    ui.loadBoardInUI(board = board)
     logger.info(msg = "Init: Started UI initialisation")
     fen.handleStartingPositionFEN(board = board)
     running: bool = True
@@ -52,6 +53,7 @@ def main() -> None:
                         for uiRect, piece in promotionUIRects:
                             if uiRect.collidepoint(mouseX, mouseY):
                                 boardHandling.completePromotion(board = board, promotionPieceType = piece)
+                                board.syncBoardFlipStateToSideToMove()
                                 promotionUIRects = []
                                 logger.debug(msg = f"Main: Processed promotion to {piece.name}")
                                 break
@@ -71,18 +73,24 @@ def main() -> None:
                     elif hoveringOverButton.children:
                         menuBarInstance.openItem = hoveringOverButton
                     else:
-                        menuBarInstance.runConnectorFunction(item = hoveringOverButton)
-                        menuBarInstance.openItem = None
+                        if hoveringOverButton.itemType == config.ItemType.TOGGLE:
+                            hoveringOverButton.toggled = not hoveringOverButton.toggled
+                            menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                        else:
+                            menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            menuBarInstance.openItem = None
                     continue
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         continue
                     targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
-                    boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
-                    logger.debug(msg = f"Main: Attempted move from {board.piecePickedUp} to {targetSquare}")
+                    valid: bool = boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
+                    if valid and board.pendingPromotion == None:
+                        board.syncBoardFlipStateToSideToMove()
+
                     board.piecePickedUp = (-1, -1)
                     board.piecePickedUpLegalMoves = []
-        renderThreadInstance.drawBoardBackground(screen = screen)
+        renderThreadInstance.drawBoardBackground(screen = screen, board = board)
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen = screen, board = board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)

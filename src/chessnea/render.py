@@ -11,7 +11,9 @@ class Rendering():
     # Handle all board rendering functions
     def __init__(self) -> None:
         self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
-        self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface() # cache board background surface
+        self.colourState: list[tuple[int, int, int]] = [config.RenderingColours.SQUARE_BLACK.value, config.RenderingColours.SQUARE_WHITE.value]
+        self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface(isBoardFlipped = False) # cache board background surface
+        self.flippedBoardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface(isBoardFlipped = True)
         self.promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA) # cache promotion overlay surface
         self.promotionBackgroundSurface: pygame.Surface = self.createGradient(
             size = (config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE),
@@ -20,21 +22,24 @@ class Rendering():
         self.currentMoveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache move highlight surface
         self.checkHighlightBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache check highlight surface
 
-    def createBoardBackgroundSurface(self) -> pygame.Surface:
+    def createBoardBackgroundSurface(self, isBoardFlipped: bool) -> pygame.Surface:
         boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT))
         for row in range(config.BOARD_SIZE):
             for col in range(config.BOARD_SIZE):
                 colour: tuple[int, int, int]
                 if (row + col) % 2 == 0:
-                    colour = config.RenderingColours.SQUARE_WHITE.value
+                    colour = config.RenderingColours.SQUARE_BLACK.value if isBoardFlipped else config.RenderingColours.SQUARE_WHITE.value
                 else:
-                    colour = config.RenderingColours.SQUARE_BLACK.value
+                    colour = config.RenderingColours.SQUARE_WHITE.value if isBoardFlipped else config.RenderingColours.SQUARE_BLACK.value
                 _ = pygame.draw.rect(surface = boardBackgroundSurface, color = colour, rect = pygame.Rect(col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE, config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE))
         return boardBackgroundSurface
     
-    def drawBoardBackground(self, screen: pygame.Surface) -> None:
+    def drawBoardBackground(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         # Draw the coloured squares for the chess board
-        _ = screen.blit(source = self.boardBackgroundSurface, dest = (0, 0))
+        if board.isBoardFlipped:
+            _ = screen.blit(source = self.flippedBoardBackgroundSurface, dest = (0, 0))
+        else:
+            _ = screen.blit(source = self.boardBackgroundSurface, dest = (0, 0))
 
     def debugRenderingMethod(self, board: boardHandling.BoardHandling, screen: pygame.Surface) -> None:
         for row in range(len(board.Board)):
@@ -58,9 +63,10 @@ class Rendering():
                     if sprite is None:
                         logger.error(msg = f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
                         raise ValueError(f"Sprite for {colour.name} {piece.name} is None")
+                    displayRow, displayCol = board.getDisplaySquare(square = (row, col))
                     squareRect: pygame.Rect = pygame.Rect(
-                        col * config.WIDTH_PER_SQUARE,
-                        row * config.HEIGHT_PER_SQUARE,
+                        displayCol * config.WIDTH_PER_SQUARE,
+                        displayRow * config.HEIGHT_PER_SQUARE,
                         config.WIDTH_PER_SQUARE,
                         config.HEIGHT_PER_SQUARE,
                     )
@@ -79,19 +85,22 @@ class Rendering():
                         center = (config.WIDTH_PER_SQUARE // 2, config.HEIGHT_PER_SQUARE // 2), 
                         radius = config.WIDTH_PER_SQUARE / 2 + config.WIDTH_PER_SQUARE // 4,
                         width = config.WIDTH_PER_SQUARE // 4)
-                    _ = screen.blit(source = captureHighlightSurface, dest = (move.toSquare[1] * config.WIDTH_PER_SQUARE, move.toSquare[0] * config.HEIGHT_PER_SQUARE))
+                    displayRow, displayCol = board.getDisplaySquare(square = move.toSquare)
+                    _ = screen.blit(source = captureHighlightSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
                 # legal move circle
                 else:
+                    displayRow, displayCol = board.getDisplaySquare(square = move.toSquare)
                     _ = pygame.draw.circle(
                         surface = screen, 
                         color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
-                        center = (move.toSquare[1] * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, move.toSquare[0] * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2), 
+                        center = (displayCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, displayRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2),
                         radius = config.WIDTH_PER_SQUARE // 8)
 
         # moving piece square highlight
         if board.piecePickedUp != (-1, -1):
+            displayRow, displayCol = board.getDisplaySquare(square = (board.piecePickedUp[0], board.piecePickedUp[1]))
             _ = self.currentMoveBackgroundSurface.fill(config.RenderingColours.PIECE_PICKED_UP_BACKGROUND.value)
-            _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (board.piecePickedUp[1] * config.WIDTH_PER_SQUARE, board.piecePickedUp[0] * config.HEIGHT_PER_SQUARE))
+            _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
 
         # picked up piece render
         if board.piecePickedUp != (-1, -1) and pickedUpSprite is not None:
@@ -102,13 +111,15 @@ class Rendering():
     def renderCheckHighlight(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         if board.checkState.inCheck and board.checkState.square != (-1, -1):
             _ = self.checkHighlightBackgroundSurface.fill(config.RenderingColours.CHECK_HIGHLIGHT_BACKGROUND.value)
-            _ = screen.blit(source = self.checkHighlightBackgroundSurface, dest = (board.checkState.square[1] * config.WIDTH_PER_SQUARE, board.checkState.square[0] * config.HEIGHT_PER_SQUARE))
+            displayRow, displayCol = board.getDisplaySquare(square = board.checkState.square)
+            _ = screen.blit(source = self.checkHighlightBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
 
     def renderMoveHighlighting(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         for square in [board.moveHighlighting.currentMove, board.moveHighlighting.previousMove]:
             if square != (-1, -1):
                 _ = self.currentMoveBackgroundSurface.fill(config.RenderingColours.PIECE_PREVIOUS_MOVE_BACKGROUND.value)
-                _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (square[1] * config.WIDTH_PER_SQUARE, square[0] * config.HEIGHT_PER_SQUARE))
+                displayRow, displayCol = board.getDisplaySquare(square = square)
+                _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
 
     def renderPromotionChoice(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> list[tuple[pygame.Rect, config.Piece]]:
         if board.pendingPromotion is None:
@@ -131,9 +142,10 @@ class Rendering():
             if row < 0 or row > 7:
                 logger.error(msg = f"Render: Attempted to render promotion choice with out of bounds row {row}")
                 raise ValueError(f"Attempted to render promotion choice with out of bounds row {row}")
+            displayRow, displayCol = board.getDisplaySquare(square = (row, col))
             rect: pygame.Rect = pygame.Rect(
-                col * config.WIDTH_PER_SQUARE,
-                row * config.HEIGHT_PER_SQUARE,
+                displayCol * config.WIDTH_PER_SQUARE,
+                displayRow * config.HEIGHT_PER_SQUARE,
                 config.WIDTH_PER_SQUARE,
                 config.HEIGHT_PER_SQUARE,
             )
