@@ -47,6 +47,8 @@ def main() -> None:
                 if event.key == pygame.K_TAB:
                     menuBarInstance.hidden = not menuBarInstance.hidden
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                if hoveringOverButton:
+                    continue
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
                         mouseX, mouseY = pygame.mouse.get_pos()
