@@ -1,7 +1,7 @@
 # Chess NEA Project
 
-[![Build](https://git.tsbprodesk.co.uk/localuser/chessnea/badges/workflows/build.yml/badge.svg?branch=main&event=push&style=flat-square)](https://git.tsbprodesk.co.uk/localuser/chessnea/actions)
-[![Release](https://git.tsbprodesk.co.uk/localuser/chessnea/badges/release.svg?style=flat-square)](https://git.tsbprodesk.co.uk/localuser/chessnea/releases)
+[![Build](https://git.tsbprodesk.co.uk/localuser/chessnea/badges/workflows/build.yml/badge.svg?branch=main&event=push&style=flat-square&cacheSeconds=60)](https://git.tsbprodesk.co.uk/localuser/chessnea/actions)
+[![Release](https://git.tsbprodesk.co.uk/localuser/chessnea/badges/release.svg?style=flat-square&cacheSeconds=60)](https://git.tsbprodesk.co.uk/localuser/chessnea/releases)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square)
 
