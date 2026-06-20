@@ -76,7 +76,11 @@ class Rendering():
                     pickedUpSprite = board.sprites[colour.value][piece.value]
 
         if board.piecePickedUpLegalMoves != []:
+            drawnSquares: list[tuple[int, int]] = []
             for move in board.piecePickedUpLegalMoves:
+                if move.toSquare in drawnSquares:
+                    continue
+                drawnSquares.append(move.toSquare)
                 if move.moveType == config.MoveType.CAPTURE or move.moveType == config.MoveType.EN_PASSANT:
                     captureHighlightSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA)
                     _ = pygame.draw.circle(
