@@ -1,6 +1,16 @@
+from __future__ import annotations # Fix import cycling
+from typing import Protocol
+
 import logging
 import chessnea.config as config
-import chessnea.board as boardHandling
+
+class BoardHandlingProtocolForFEN(Protocol):                                                                                                                                                                                      
+    Board: list[list[tuple[config.Piece, config.PieceColour]]]                                                                                                                                                    
+    SideToMove: config.PieceColour                                                                                                                                                                                
+    CastlingRights: list[config.CastlingRights]                                                                                                                                                                   
+    EnPassantTargettableSquare: tuple[int, int]                                                                                                                                                                   
+    FiftyMoveCounter: int                                                                                                                                                                                         
+    FullMoveCounter: int
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -16,7 +26,7 @@ def parseBoardCoordinatesToFENCoordinates(row: int, col: int) -> str:
         raise ValueError(f"BoardHandling: Invalid FEN: Invalid input square field: {row} {col}")
     return f"{'abcdefgh'[col]}{8 - row}"
 
-def exportFEN(board: boardHandling.BoardHandling) -> str:
+def exportFEN(board: BoardHandlingProtocolForFEN) -> str:
     positionFEN: str = ""
     for row in board.Board:
         emptySquareCounter: int = 0
@@ -29,9 +39,9 @@ def exportFEN(board: boardHandling.BoardHandling) -> str:
                     positionFEN += str(emptySquareCounter)
                     emptySquareCounter = 0
                 if colour == config.PieceColour.WHITE:
-                    positionFEN += config.PieceToFen.WHITE[piece]
+                    positionFEN += config.PieceToFEN.WHITE[piece]
                 else:
-                    positionFEN += config.PieceToFen.BLACK[piece]
+                    positionFEN += config.PieceToFEN.BLACK[piece]
         if emptySquareCounter != 0:
             positionFEN += str(emptySquareCounter)
         positionFEN += "/"
@@ -71,7 +81,7 @@ def getFENasKey(fen: str) -> str:
     splitFEN: list[str] = fen.split(sep = " ")
     return splitFEN[0] + " " + splitFEN[1] + " " + splitFEN[2] + " " + splitFEN[3] # We only want the position, side to move, castling rights and en passant target square for our key, as this uniquely identifies a position for repetition detection
 
-def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
+def importFEN(board: BoardHandlingProtocolForFEN, fen: str) -> None:
     # Parse a position given in FEN into our internal representation, as well as assigning values to necessary flags for game flow
     logger.debug(msg = f"FEN: Importing FEN string: {fen}")
     splitFEN: list[str] = fen.split(sep = " ")
@@ -197,24 +207,25 @@ def importFEN(board: boardHandling.BoardHandling, fen: str) -> None:
         raise ValueError("No black king found in the imported position")
     logger.debug(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
 
-def handleStartingPositionFEN(board: boardHandling.BoardHandling) -> None:
-    # Handle the starting position FEN string separately for readability of main.py
-    logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
-    importFEN(board = board, fen = config.FEN_STARTING_POSITION)
+# def handleStartingPositionFEN(board: BoardHandling) -> None:
+#     # Handle the starting position FEN string separately for readability of main.py
+#     logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
+#     importFEN(board = board, fen = config.FEN_STARTING_POSITION)
     
-    # We have to check if the imported FEN is already in check, as to seed our boardHandling.updateGameStateAfterMove() function.
-    enemyColour: config.PieceColour = board.findOpposingColour(colour = board.SideToMove)
-    kingPosition: tuple[int, int] = boardHandling.findKing(board = board, sourceColour = board.SideToMove)
-    if boardHandling.isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = enemyColour):
-        board.checkState.inCheck = True
-        board.checkState.square = kingPosition
-        board.checkState.colourInCheck = board.SideToMove
-    else:
-        board.checkState.inCheck = False
-        board.checkState.square = (-1, -1)
-        board.checkState.colourInCheck = None
+#     # We have to check if the imported FEN is already in check, as to seed our boardHandling.updateGameStateAfterMove() function.
+#     enemyColour: config.PieceColour = board.findOpposingColour(colour = board.SideToMove)
+#     kingPosition: tuple[int, int] = findKing(board = board, sourceColour = board.SideToMove)
+#     if isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = enemyColour):
+#         board.checkState.inCheck = True
+#         board.checkState.square = kingPosition
+#         board.checkState.colourInCheck = board.SideToMove
+#     else:
+#         board.checkState.inCheck = False
+#         board.checkState.square = (-1, -1)
+#         board.checkState.colourInCheck = None
 
-    fenString: str = exportFEN(board = board)
-    board.PositionHistory.append(fenString) # Add the starting position to the position history
-    board.PositionHistoryAsKeys.append(getFENasKey(fen = fenString)) # Add the starting position key to the position history keys for threefold
-    boardHandling.updateGameStateAfterMove(board = board)
+#     fenString: str = exportFEN(board = board)
+#     board.PositionHistory.append(config.MoveHistoryData(fen = fenString)) # Add the starting position to the position history
+#     board.PositionHistoryAsKeys.append(getFENasKey(fen = fenString)) # Add the starting position key to the position history keys for threefold
+#     board.moveHighlightingWithPositionHistory.append(config.MoveHighlighting())
+#     updateGameStateAfterMove(board = board)

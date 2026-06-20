@@ -3,6 +3,7 @@ import logging
 
 from chessnea.board import BoardHandling
 import chessnea.config as config
+import chessnea.pgn as pgn
 
 boardInstance: BoardHandling
 logger: logging.Logger = logging.getLogger(name = __name__)
@@ -35,6 +36,44 @@ def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
             children = None, 
             connector = ConnectorFunctions.exitGame,
             paddedRight = True))
+    # Game Settings
+    menuBarInstance.addMenuItem(
+        item = config.MenuItem(
+            name = "Game",
+            itemType = config.ItemType.DROPDOWN,
+            children = [
+                config.MenuItem(
+                    name = "New Game",
+                    itemType = config.ItemType.BUTTON,
+                    children = None,
+                    connector = ConnectorFunctions.newGame
+                ),
+                config.MenuItem(
+                    name = "Undo Move",
+                    itemType = config.ItemType.BUTTON,
+                    children = None,
+                    connector = ConnectorFunctions.undoMove
+                ),
+                config.MenuItem(
+                    name = "Import/Export FEN...",
+                    itemType = config.ItemType.BUTTON,
+                    children = None,
+                    connector = ConnectorFunctions.handleFEN
+                ),
+                config.MenuItem(
+                    name = "Import PGN...",
+                    itemType = config.ItemType.BUTTON,
+                    children = None,
+                    connector = ConnectorFunctions.handlePGN
+                ),
+                config.MenuItem(
+                    name = "Export PGN...",
+                    itemType = config.ItemType.BUTTON,
+                    children = None,
+                    connector = ConnectorFunctions.handlePGN
+                )
+            ],
+            connector = lambda: config.ReturnType.NORMAL))
     # Quick Settings
     menuBarInstance.addMenuItem(
         item = config.MenuItem(
@@ -42,14 +81,14 @@ def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
             itemType = config.ItemType.DROPDOWN,
             children = [
                 config.MenuItem(
-                    name = "Board Flipping",
+                    name = "Auto Flip Board",
                     itemType = config.ItemType.TOGGLE,
                     children = None,
                     connector = ConnectorFunctions.setFlipBoard
                 )
             ],
-            connector = lambda: config.ReturnType.NORMAL)
-        )
+            connector = lambda: config.ReturnType.NORMAL))
+
 
 class MenuBar():
     def __init__(self)  -> None:
@@ -60,6 +99,7 @@ class MenuBar():
         self.menuItems: list[config.MenuItem] = []
         self.fontRegular: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_REGULAR), size = 24)
         self.fontMedium: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_MEDIUM), size = 24)
+        self.outlineWidth: int = 2
 
         # Padding
         self.paddingX: int = 16
@@ -72,7 +112,7 @@ class MenuBar():
         self.openItem: config.MenuItem | None = None
         self.dropdownItemHeight: int = 42
         self.dropdownWidth: int = 160
-        self.dropdownOutlineWidth: int = 3
+        self.dropdownOutlineWidth: int = 2
 
     def addMenuItem(self, item: config.MenuItem) -> None:
         self.menuItems.append(item)
@@ -90,6 +130,7 @@ class MenuBar():
         return None
 
     def runConnectorFunction(self, item: config.MenuItem) -> config.ReturnType:
+        logger.info(msg = f"UI: Running connector function {item.connector.__name__}")
         return item.connector()
 
     def drawMenuBar(self, screen: pygame.Surface) -> None:
@@ -129,7 +170,6 @@ class MenuBar():
                 buttonColour = config.UIColours.ACTION_HOVER.value
             elif item.toggled:
                 buttonColour = config.UIColours.ACTION_TOGGLED.value
-                print(1)
             else:
                 buttonColour = config.UIColours.SURFACE.value
 
@@ -148,8 +188,9 @@ class MenuBar():
                     color = config.UIColours.OUTLINE.value,
                     start_pos = (self.width - offsetXForItemRight, 0),
                     end_pos = (self.width - offsetXForItemRight, self.height),
-                    width = 2
+                    width = self.outlineWidth
                 )
+                offsetXForItemRight += self.outlineWidth
             else:
                 offsetXForItemLeft += itemWidth + self.itemGap
                 _ = pygame.draw.line(
@@ -157,8 +198,9 @@ class MenuBar():
                     color = config.UIColours.OUTLINE.value,
                     start_pos = (offsetXForItemLeft, 0),
                     end_pos = (offsetXForItemLeft, self.height),
-                    width = 2
+                    width = self.outlineWidth
                 )
+                offsetXForItemLeft += self.outlineWidth
             _ = pygame.draw.line(
                 surface = menuBarSurface,
                 color = config.UIColours.OUTLINE.value,
@@ -169,17 +211,24 @@ class MenuBar():
 
             _ = screen.blit(source = menuBarSurface, dest = (0, 0))
             if item == self.openItem and item.children:
-                dropdownX: int = itemRect.left
+                dropdownX: int = itemRect.left - self.dropdownOutlineWidth
                 dropdownY: int = self.height
                 childItemRect: pygame.Rect
+                maximumDropdownBoxWidth: int = 0
+                dropdownOutlineOffset: int = self.dropdownOutlineWidth
+                for childItem in item.children: # calculate largest dropdown width
+                    dropdownWidth: int = max(itemRect.width, self.fontRegular.size(childItem.name)[0] + (self.paddingX * 2))
+                    if maximumDropdownBoxWidth <= dropdownWidth:
+                        maximumDropdownBoxWidth = dropdownWidth
+
                 for childItem in item.children:
-                    dropdownWidth: int = max(itemRect.width, self.fontRegular.size(childItem.name)[0])
                     childItemRect = pygame.Rect(
                         dropdownX,
-                        dropdownY - self.dropdownOutlineWidth,
-                        dropdownWidth,
+                        dropdownY - dropdownOutlineOffset,
+                        maximumDropdownBoxWidth,
                         self.dropdownItemHeight
                     )
+                    dropdownOutlineOffset += self.dropdownOutlineWidth
                     childItemColour: tuple[int, int, int, int]
                     childItemHovered: bool = childItemRect.collidepoint((mouseX, mouseY))
                     if childItem.toggled and childItemHovered:
@@ -226,3 +275,22 @@ class ConnectorFunctions():
         boardInstance.isBoardFlippingEnabled = not boardInstance.isBoardFlippingEnabled
         boardInstance.syncBoardFlipStateToSideToMove()
         return config.ReturnType.NORMAL
+
+    @staticmethod
+    def newGame() -> config.ReturnType:
+        return boardInstance.resetBoard()
+
+    @staticmethod
+    def handleFEN() -> config.ReturnType:
+        return config.ReturnType.NORMAL
+
+    @staticmethod
+    def handlePGN() -> config.ReturnType:
+        pgnString: str = pgn.convertPositionHistoryToPGN(board = boardInstance)
+        logger.info(msg = f"UI: {pgnString}")
+        return config.ReturnType.NORMAL
+
+    @staticmethod
+    def undoMove() -> config.ReturnType:
+        _ = boardInstance.undoMove()
+        return _
