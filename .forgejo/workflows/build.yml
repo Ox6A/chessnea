@@ -40,11 +40,7 @@ jobs:
           . .venv/bin/activate                                                                                                                                                                                    
           basedpyright
 
-      - name: Run tests                                                                                                                                                                                           
-        env:                                                                                                                                                                                                      
-          SDL_VIDEODRIVER: dummy                                                                                                                                                                                  
-          PERFT_MAX_DEPTH: "2"                                                                                                                                                                                    
-          PERFT_MAX_POSITIONS: "50"                                                                                                                                                                               
+      - name: Run tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
         run: |                                                                                                                                                                                                    
           . .venv/bin/activate                                                                                                                                                                                    
           PYTHONPATH=src python -m pytest -n auto -q 
