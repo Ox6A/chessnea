@@ -128,7 +128,6 @@ class PseudoLegalMovesForPieceType():
         validMoves: list[config.MoveData] = []
         direction: int
         startingRank: int
-        moveTypeToUse: config.MoveType
 
         if board.Board[row][col][1] == config.PieceColour.WHITE:
             direction = -1
@@ -139,10 +138,11 @@ class PseudoLegalMovesForPieceType():
         targetSingleRow: int = row + direction
         targetDoubleRow: int = row + (2 * direction)
         if 0 <= targetSingleRow <= 7 and board.Board[targetSingleRow][col][0] == config.Piece.EMPTY: # Standard move
-            moveTypeToUse = config.MoveType.NORMAL
             if targetSingleRow == 0 or targetSingleRow == 7: # A single row push should be a promotion if landing on the final ranks
-                moveTypeToUse = config.MoveType.PROMOTION
-            validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, col), moveType = moveTypeToUse))
+                for promotionalPiece in config.PromotionalPieces:
+                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, col), moveType = config.MoveType.PROMOTION, promotionPiece = config.Piece(promotionalPiece.value)))
+            else:
+                validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, col), moveType = config.MoveType.NORMAL))
             if row == startingRank and board.Board[targetDoubleRow][col][0] == config.Piece.EMPTY: # Double move from starting rank
                 validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetDoubleRow, col), moveType = config.MoveType.NORMAL))
 
@@ -150,10 +150,11 @@ class PseudoLegalMovesForPieceType():
             if 0 <= targetDiagonalCol <= 7 and 0 <= targetSingleRow <= 7:
                 targetPiece, targetColour = board.Board[targetSingleRow][targetDiagonalCol][0], board.Board[targetSingleRow][targetDiagonalCol][1]
                 if targetPiece != config.Piece.EMPTY and targetPiece != config.Piece.KING and targetColour != board.Board[row][col][1]: # Diagonal capture
-                    moveTypeToUse = config.MoveType.CAPTURE
                     if targetSingleRow == 0 or targetSingleRow == 7: # A capture should be a promotion if landing on the final ranks
-                        moveTypeToUse = config.MoveType.PROMOTION
-                    validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = moveTypeToUse))
+                        for promotionalPiece in config.PromotionalPieces:
+                            validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.PROMOTION, promotionPiece = config.Piece(promotionalPiece.value)))
+                    else:
+                        validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.CAPTURE))
                 if (targetSingleRow, targetDiagonalCol) == board.EnPassantTargettableSquare and targetPiece == config.Piece.EMPTY: # En passant capture
                     if board.SideToMove == config.PieceColour.WHITE:
                         if board.Board[targetSingleRow + 1][targetDiagonalCol][0] == config.Piece.PAWN:
@@ -560,7 +561,10 @@ def updateCastlingRightsAfterMove(board: BoardHandling, pieceToMove: config.Piec
             elif toSquare == (0, 7) and config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
                 board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
 
-def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) -> None:
+def completePromotion(board: BoardHandling, promotionPieceType: config.Piece | None) -> None:
+    if promotionPieceType is None:
+        logger.error(msg = "Board: Attempting to complete promotion with no promotion piece type specified")
+        return
     if board.pendingPromotion is None:
         logger.error(msg = "Board: Attempting to complete promotion when there is no pending promotion")
         return
@@ -722,6 +726,4 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
     board.PositionHistory.append(data)
     board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
     board.moveHighlightingWithPositionHistory.append(config.MoveHighlighting(currentMove = board.moveHighlighting.currentMove, previousMove = board.moveHighlighting.previousMove))
-    dataMove: config.MoveData | None = data.move
-    logger.info(msg = dataMove)
     return True
