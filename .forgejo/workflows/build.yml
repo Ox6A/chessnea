@@ -34,7 +34,12 @@ jobs:
         run: |                                                                                                                                                                                                    
           . .venv/bin/activate                                                                                                                                                                                    
           PYTHONDONTWRITEBYTECODE=1 python -m compileall -q src tests                                                                                                                                             
-                                                                                                                                                                                                                  
+
+      - name: Type check with basedpyright                                                                                                                                                                        
+        run: |                                                                                                                                                                                                    
+          . .venv/bin/activate                                                                                                                                                                                    
+          basedpyright
+
       - name: Run tests                                                                                                                                                                                           
         env:                                                                                                                                                                                                      
           SDL_VIDEODRIVER: dummy                                                                                                                                                                                  
