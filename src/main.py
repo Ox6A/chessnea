@@ -4,7 +4,6 @@ import typing
 import pygame
 
 import chessnea.config as config
-import chessnea.fen as fen
 import chessnea.board as boardHandling
 import chessnea.render as render
 import chessnea.ui as ui
@@ -30,7 +29,7 @@ def main() -> None:
     ui.addStandardUIItems(menuBarInstance = menuBarInstance)
     ui.loadBoardInUI(board = board)
     logger.info(msg = "Init: Started UI initialisation")
-    fen.handleStartingPositionFEN(board = board)
+    _ = board.resetBoard()
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
     logger.info(msg = "Init: Initialisation finished")
@@ -44,7 +43,8 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:  
-                if event.key == pygame.K_TAB:
+                key = typing.cast(int, event.key)
+                if key == pygame.K_TAB:
                     menuBarInstance.hidden = not menuBarInstance.hidden
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if hoveringOverButton:

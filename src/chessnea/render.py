@@ -12,8 +12,8 @@ class Rendering():
     def __init__(self) -> None:
         self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
         self.colourState: list[tuple[int, int, int]] = [config.RenderingColours.SQUARE_BLACK.value, config.RenderingColours.SQUARE_WHITE.value]
-        self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface(isBoardFlipped = False) # cache board background surface
-        self.flippedBoardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface(isBoardFlipped = True)
+        self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface() # cache board background surface
+        self.flippedBoardBackgroundSurface: pygame.Surface = self.boardBackgroundSurface.copy()
         self.promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA) # cache promotion overlay surface
         self.promotionBackgroundSurface: pygame.Surface = self.createGradient(
             size = (config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE),
@@ -22,15 +22,15 @@ class Rendering():
         self.currentMoveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache move highlight surface
         self.checkHighlightBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache check highlight surface
 
-    def createBoardBackgroundSurface(self, isBoardFlipped: bool) -> pygame.Surface:
+    def createBoardBackgroundSurface(self) -> pygame.Surface:
         boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT))
         for row in range(config.BOARD_SIZE):
             for col in range(config.BOARD_SIZE):
                 colour: tuple[int, int, int]
                 if (row + col) % 2 == 0:
-                    colour = config.RenderingColours.SQUARE_BLACK.value if isBoardFlipped else config.RenderingColours.SQUARE_WHITE.value
+                    colour = config.RenderingColours.SQUARE_WHITE.value
                 else:
-                    colour = config.RenderingColours.SQUARE_WHITE.value if isBoardFlipped else config.RenderingColours.SQUARE_BLACK.value
+                    colour = config.RenderingColours.SQUARE_BLACK.value
                 _ = pygame.draw.rect(surface = boardBackgroundSurface, color = colour, rect = pygame.Rect(col * config.WIDTH_PER_SQUARE, row * config.HEIGHT_PER_SQUARE, config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE))
         return boardBackgroundSurface
     

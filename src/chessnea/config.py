@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import pygame
 from pathlib import Path
 import sys
@@ -10,8 +10,8 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 VERSION: str = "0.0.1"
 FPS: int = 60
-WIDTH: int = 900
-HEIGHT: int = 900
+WIDTH: int = 800
+HEIGHT: int = 800
 BOARD_SIZE: int = 8
 PIECE_SET = "alpha"
 
@@ -25,7 +25,7 @@ FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_S
 
 def getRelativePathToAssets(assetsDir: str) -> Path:
     basePath = getattr(sys, "_MEIPASS", None)
-    if basePath is not None:
+    if isinstance(basePath, str):
         return Path(basePath) / assetsDir
     return Path(__file__).parent.parent.parent / assetsDir
 
@@ -81,6 +81,8 @@ class PieceColour(IntEnum): # LUT for integer equivalence of chess piece colours
 class PromotionData(MoveData):
     move: MoveData = MoveData(fromSquare = (-1, -1), toSquare = (-1, -1), moveType = MoveType.PROMOTION)
     colour: PieceColour = PieceColour.WHITE
+    capturedPiece: Piece = Piece.EMPTY
+    capturedColour: PieceColour = PieceColour.WHITE
 
 class PromotionalPieces(IntEnum): # LUT for integer equivalence of pieces that a pawn can promote to
     KNIGHT = 1
@@ -118,7 +120,18 @@ class GameState():
     reason: GameOverReason | None = None
 
 @dataclass(frozen = True)
-class PieceToFen(): # LUT for character equivalence of chess pieces when exporting FEN strings
+class MoveHistoryData:
+    fen: str
+    move: MoveData | None = None
+    piece: Piece = Piece.EMPTY
+    colour: PieceColour = PieceColour.WHITE
+    capturedPiece: Piece = Piece.EMPTY
+    capturedColour: PieceColour = PieceColour.WHITE
+    checkState: CheckState = field(default_factory = CheckState)
+    gameState: GameState = field(default_factory = GameState)
+
+@dataclass(frozen = True)
+class PieceToFEN(): # LUT for character equivalence of chess pieces when exporting FEN strings
     WHITE: typing.ClassVar[dict[Piece, str]] = {
         Piece.PAWN: "P",
         Piece.KNIGHT: "N",
@@ -133,6 +146,40 @@ class PieceToFen(): # LUT for character equivalence of chess pieces when exporti
         Piece.ROOK: "r",
         Piece.QUEEN: "q",
         Piece.KING: "k"}
+
+@dataclass(frozen = True)
+class PieceToPGN():
+    PIECE: typing.ClassVar[dict[Piece, str]] = {
+        Piece.PAWN: "",
+        Piece.KNIGHT: "N",
+        Piece.BISHOP: "B",
+        Piece.ROOK: "R",
+        Piece.QUEEN: "Q",
+        Piece.KING: "K"
+    }
+
+@dataclass(frozen = True)
+class InternalToAlgebraic():
+    RANK: typing.ClassVar[dict[int, str]] = {
+        0: "8",
+        1: "7",
+        2: "6",
+        3: "5",
+        4: "4",
+        5: "3",
+        6: "2",
+        7: "1"
+    }
+    FILE: typing.ClassVar[dict[int, str]] = {
+        0: "a",
+        1: "b",
+        2: "c",
+        3: "d",
+        4: "e",
+        5: "f",
+        6: "g",
+        7: "h"
+    }
 
 class RenderingColours(Enum): # Lichess (lichess.org) default colour scheme
     SQUARE_WHITE = (240, 217, 181)

@@ -6,7 +6,7 @@ import chessnea.assets as assets
 import chessnea.config as config
 import chessnea.fen as fen
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(name = __name__)
 
 class BoardHandling():
     def __init__(self)  -> None:
@@ -27,11 +27,64 @@ class BoardHandling():
         self.moveHighlighting: config.MoveHighlighting = config.MoveHighlighting() # Store the current and previous move for move highlighting
         self.checkState: config.CheckState = config.CheckState() # Store check state for check highlighting
         self.gameState: config.GameState = config.GameState() # Store game state
-        self.PositionHistory: list[str] = [] # Store move history as FEN strings
+        self.PositionHistory: list[config.MoveHistoryData] = [] # Store move history as FEN strings
         self.PositionHistoryAsKeys: list[str] = [] # Store move history as FEN strings when checking for threefold repetition
+        self.moveHighlightingWithPositionHistory: list[config.MoveHighlighting] = []
         self.isBoardFlipped: bool = False
         self.isBoardFlippingEnabled: bool = False
         
+    def resetBoard(self) -> config.ReturnType:
+        fen.importFEN(board = self, fen = config.FEN_STARTING_POSITION)
+        self.piecePickedUp = (-1, -1)
+        self.piecePickedUpLegalMoves = []
+        self.pendingPromotion = None
+        self.moveHighlighting = config.MoveHighlighting()
+        self.checkState = config.CheckState()
+        self.gameState = config.GameState()
+        self.syncBoardFlipStateToSideToMove()
+        fenString: str = fen.exportFEN(board = self)
+        self.PositionHistory = [config.MoveHistoryData(fen = fenString)]
+        self.PositionHistoryAsKeys = [fen.getFENasKey(fen = fenString)]
+        self.moveHighlightingWithPositionHistory = [config.MoveHighlighting()]
+        return config.ReturnType.NORMAL
+
+    def refreshGameStateAfterFENLoad(self) -> None:
+        self.piecePickedUp = (-1, -1)
+        self.piecePickedUpLegalMoves = []
+        self.pendingPromotion = None
+        self.moveHighlighting = config.MoveHighlighting()
+        self.checkState = config.CheckState()
+        self.gameState = config.GameState()
+        enemyColour: config.PieceColour = self.findOpposingColour(colour = self.SideToMove)
+        kingPosition: tuple[int, int] = findKing(board = self, sourceColour = self.SideToMove)
+        if isSquareAttacked(board = self, targetSquare = kingPosition, attackingColour = enemyColour):
+            self.checkState.inCheck = True
+            self.checkState.square = kingPosition
+            self.checkState.colourInCheck = self.SideToMove
+        self.syncBoardFlipStateToSideToMove()
+        updateGameStateAfterMove(board = self)
+
+    def undoMove(self) -> config.ReturnType:
+        if len(self.PositionHistory) <= 1:
+            logger.error(msg = "Board: Cannot undo move because position history is empty")
+            return config.ReturnType.ERROR
+
+        _ = self.PositionHistory.pop()
+        _ = self.PositionHistoryAsKeys.pop()
+        if len(self.moveHighlightingWithPositionHistory) > 0:
+            _ = self.moveHighlightingWithPositionHistory.pop()
+        previousPosition: config.MoveHistoryData = self.PositionHistory[-1]
+        fen.importFEN(board = self, fen = previousPosition.fen)
+        self.refreshGameStateAfterFENLoad()
+        if len(self.PositionHistory) == 1:
+            self.moveHighlighting = config.MoveHighlighting()
+        elif len(self.moveHighlightingWithPositionHistory) > 0:
+            self.moveHighlighting = self.moveHighlightingWithPositionHistory[-1]
+        else:
+            self.moveHighlighting = config.MoveHighlighting()
+        logger.info(msg = f"Board: Reverted to the previous move, counter: {self.FullMoveCounter}")
+        return config.ReturnType.NORMAL
+
     def getDisplaySquare(self, square: tuple[int, int]) -> tuple[int, int]:
         if square == (-1, -1): return square
         if self.isBoardFlipped:
@@ -518,8 +571,6 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
     board.FiftyMoveCounter = 0
     board.Board[toRow][toCol] = (promotionPieceType, colour)
     logger.info(msg = f"Board: Completed promotion to {promotionPieceType.name} {colour.name} at square {(toRow, toCol)}")
-
-    board.pendingPromotion = None
     board.EnPassantTargettableSquare = (-1, -1)
     handleCheckStateAfterMove(board = board, colourToMove = colour)
     if colour == config.PieceColour.BLACK:
@@ -527,8 +578,32 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece) ->
 
     board.changeSideToMove()
     fenString: str = fen.exportFEN(board = board)
-    board.PositionHistory.append(fenString)
+    board.PositionHistory.append(config.MoveHistoryData(
+        fen = fenString,
+        move = config.MoveData(
+            fromSquare = board.pendingPromotion.fromSquare,
+            toSquare = board.pendingPromotion.toSquare,
+            moveType = config.MoveType.PROMOTION,
+            promotionPiece = promotionPieceType
+        ),
+        piece = config.Piece.PAWN,
+        colour = colour,
+        capturedPiece = board.pendingPromotion.capturedPiece,
+        capturedColour = board.pendingPromotion.capturedColour,
+        checkState = config.CheckState(
+            inCheck = board.checkState.inCheck,
+            square = board.checkState.square,
+            colourInCheck = board.checkState.colourInCheck
+        ),
+        gameState = config.GameState(
+            gameOver = board.gameState.gameOver,
+            winner = board.gameState.winner,
+            reason = board.gameState.reason
+        )
+    ))
+    board.pendingPromotion = None
     board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
+    board.moveHighlightingWithPositionHistory.append(config.MoveHighlighting(currentMove = board.moveHighlighting.currentMove, previousMove = board.moveHighlighting.previousMove))
     updateGameStateAfterMove(board = board)
 
 def handleCheckStateAfterMove(board: BoardHandling, colourToMove: config.PieceColour) -> None:
@@ -584,7 +659,13 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         board.FiftyMoveCounter += 1
 
     if moveType == config.MoveType.PROMOTION:
-        board.pendingPromotion = config.PromotionData(fromSquare = fromSquare, toSquare = toSquare, moveType = config.MoveType.PROMOTION, colour = colourToMove)
+        board.pendingPromotion = config.PromotionData(
+            fromSquare = fromSquare, 
+            toSquare = toSquare, 
+            moveType = config.MoveType.PROMOTION, 
+            colour = colourToMove,
+            capturedPiece = capturedPiece,
+            capturedColour = capturedColour)
         board.EnPassantTargettableSquare = (-1, -1)
         return True
 
@@ -615,7 +696,32 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
         board.FullMoveCounter += 1
     board.changeSideToMove()
     fenString: str = fen.exportFEN(board = board)
-    board.PositionHistory.append(fenString)
-    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
+    data: config.MoveHistoryData = config.MoveHistoryData(
+        fen = fenString,
+        move = config.MoveData(
+            fromSquare = fromSquare,
+            toSquare = toSquare,
+            moveType = moveType
+        ),
+        piece = pieceToMove,
+        colour = colourToMove,
+        capturedPiece = capturedPiece,
+        capturedColour = capturedColour,
+        checkState = config.CheckState(
+            inCheck = board.checkState.inCheck,
+            square = board.checkState.square,
+            colourInCheck = board.checkState.colourInCheck
+        ),
+        gameState = config.GameState(
+            gameOver = board.gameState.gameOver,
+            winner = board.gameState.winner,
+            reason = board.gameState.reason
+        )
+    )
     updateGameStateAfterMove(board = board)
+    board.PositionHistory.append(data)
+    board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
+    board.moveHighlightingWithPositionHistory.append(config.MoveHighlighting(currentMove = board.moveHighlighting.currentMove, previousMove = board.moveHighlighting.previousMove))
+    dataMove: config.MoveData | None = data.move
+    logger.info(msg = dataMove)
     return True
