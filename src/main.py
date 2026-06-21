@@ -89,7 +89,7 @@ def main() -> None:
                         continue
                     targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
                     valid: bool = boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
-                    if valid and board.pendingPromotion == None:
+                    if valid and board.pendingPromotion is None:
                         board.syncBoardFlipStateToSideToMove()
 
                     board.piecePickedUp = (-1, -1)

@@ -11,8 +11,8 @@ def getDisambiguation(position: config.MoveHistoryData, previousPosition: config
         return ""
     move: config.MoveData | None = position.move
     if move is None:
-        logger.error(msg = f"PGN: Invalid move in position history, panicking. (Move is None)")
-        raise ValueError(f"PGN: Invalid move in position history, panicking. (Move is None)")
+        logger.error(msg = "PGN: Invalid move in position history, panicking. (Move is None)")
+        raise ValueError("PGN: Invalid move in position history, panicking. (Move is None)")
     tempBoard: boardHandling.BoardHandling = boardHandling.BoardHandling()
     fen.importFEN(board = tempBoard, fen = previousPosition.fen)
     disambiguationPos: list[tuple[int, int]] = []
@@ -55,13 +55,13 @@ def getDisambiguation(position: config.MoveHistoryData, previousPosition: config
 def getCastling(position: config.MoveHistoryData) -> str:
     move: config.MoveData | None = position.move
     if move is None:
-        logger.error(msg = f"PGN: Invalid move in position history, panicking. (Move is None)")
-        raise ValueError(f"PGN: Invalid move in position history, panicking. (Move is None)")
+        logger.error(msg = "PGN: Invalid move in position history, panicking. (Move is None)")
+        raise ValueError("PGN: Invalid move in position history, panicking. (Move is None)")
     if move.moveType != config.MoveType.CASTLING:
         return ""
     if position.piece != config.Piece.KING:
-        logger.error(msg = f"PGN: Invalid move in position history, panicking. (Attempted castling with a non-king piece!)")
-        raise ValueError(f"PGN: Invalid move in position history, panicking. (Attempted castling with a non-king piece!)")
+        logger.error(msg = "PGN: Invalid move in position history, panicking. (Attempted castling with a non-king piece!)")
+        raise ValueError("PGN: Invalid move in position history, panicking. (Attempted castling with a non-king piece!)")
     if move.toSquare[1] == 6:
         return "O-O"
     if move.toSquare[1] == 2:

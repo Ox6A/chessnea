@@ -27,10 +27,28 @@ jobs:
           python --version
           python -m pip --version
           python -m pip check
+          python -m pip install -r requirements-dev.txt
 
       - name: Syntax check
         run: |
           PYTHONDONTWRITEBYTECODE=1 python -m compileall -q src tests
+
+      - name: Ruff lint
+        run: |
+          ruff check src tests
+
+      - name: Security lint
+        run: |
+          bandit -r src
+
+      - name: Dependency audit
+        run: |
+          pip-audit -r requirements.txt
+
+      - name: Complexity report
+        run: |
+          radon cc src -a
+          radon mi src
 
       - name: Type check with basedpyright
         run: |
