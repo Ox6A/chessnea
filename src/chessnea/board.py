@@ -86,7 +86,8 @@ class BoardHandling():
         return config.ReturnType.NORMAL
 
     def getDisplaySquare(self, square: tuple[int, int]) -> tuple[int, int]:
-        if square == (-1, -1): return square
+        if square == (-1, -1): 
+            return square
         if self.isBoardFlipped:
             return (7 - square[0], 7 - square[1])
         return square
@@ -500,7 +501,7 @@ def updateGameStateAfterMove(board: BoardHandling) -> None:
         board.gameState.gameOver = True
         board.gameState.winner = None
         board.gameState.reason = config.GameOverReason.THREEFOLD_REPETITION
-        logger.info(msg = f"Board: Game drawn by threefold repetition")
+        logger.info(msg = "Board: Game drawn by threefold repetition")
         return
 
     legalMoves: list[config.MoveData] = getAllLegalMovesForSide(board = board, colour = board.SideToMove)
@@ -522,7 +523,7 @@ def updateGameStateAfterMove(board: BoardHandling) -> None:
         board.gameState.gameOver = True
         board.gameState.winner = None
         board.gameState.reason = config.GameOverReason.FIFTY_MOVE_RULE
-        logger.info(msg = f"Board: Game drawn by fifty-move rule")
+        logger.info(msg = "Board: Game drawn by fifty-move rule")
         return
 
 def updateCastlingRightsAfterMove(board: BoardHandling, pieceToMove: config.Piece, colourToMove: config.PieceColour, fromSquare: tuple[int, int], toSquare: tuple[int, int], capturedPiece: config.Piece, capturedColour: config.PieceColour) -> None:
