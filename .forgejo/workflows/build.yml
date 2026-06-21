@@ -32,6 +32,23 @@ jobs:
         run: |
           PYTHONDONTWRITEBYTECODE=1 python -m compileall -q src tests
 
+      - name: Ruff lint
+        run: |
+          ruff check src tests
+
+      - name: Security lint
+        run: |
+          bandit -r src
+
+      - name: Dependency audit
+        run: |
+          pip-audit -r requirements.txt
+
+      - name: Complexity report
+        run: |
+          radon cc src -a
+          radon mi src
+
       - name: Type check with basedpyright
         run: |
           basedpyright
