@@ -109,7 +109,7 @@ def loadPerft()-> list[tuple[str, str, int, int]]:
 
 perftList: list[tuple[str, str, int, int]] = loadPerft()
 if perftList == []:
-    pytest.skip(reason = f"No EPD files found!", allow_module_level = True)
+    pytest.skip(reason = "No EPD files found!", allow_module_level = True)
 
 @pytest.mark.parametrize(argnames = ("line", "fenString", "depth", "nodes"), argvalues = perftList)
 def testEPDPerftCases(line: str, fenString: str, depth: int, nodes: int, record_property: Callable[[str, object], None]) -> None:
