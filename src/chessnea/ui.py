@@ -118,7 +118,7 @@ class MenuBar():
         self.menuItems.append(item)
 
     def checkIfHoveringOverMenuItem(self, mouseX: int, mouseY: int) -> config.MenuItem | None:
-        if self.menuItems == [] or self.hidden == True:
+        if self.menuItems == [] or self.hidden:
             return None
         for i in self.menuItems:
             if i.rect and i.rect.collidepoint((mouseX, mouseY)):

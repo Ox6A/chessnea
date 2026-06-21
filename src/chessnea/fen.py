@@ -130,7 +130,8 @@ def importFEN(board: BoardHandlingProtocolForFEN, fen: str) -> None:
     
     # Parse FEN board position
     splitFENRanks: list[str] = splitFEN[0].split(sep = "/")
-    if len(splitFENRanks) != 8: raise ValueError(f"Invalid FEN: Expected 8 ranks, got {len(splitFENRanks)}") # FEN position rank nr. check (erroneous data)
+    if len(splitFENRanks) != 8: 
+        raise ValueError(f"Invalid FEN: Expected 8 ranks, got {len(splitFENRanks)}") # FEN position rank nr. check (erroneous data)
 
     emptyBoard: list[list[tuple[config.Piece, config.PieceColour]]] = [[(config.Piece.EMPTY, config.PieceColour.WHITE) for _ in range(8)] for _ in range(8)] # Initialise an empty board for us to populate
     for rankIndex, ranks in enumerate(splitFENRanks):
@@ -206,26 +207,3 @@ def importFEN(board: BoardHandlingProtocolForFEN, fen: str) -> None:
         logger.error(msg = "FEN: No black king found in the imported position")
         raise ValueError("No black king found in the imported position")
     logger.debug(msg = f"FEN: Successfully parsed FEN string, side to move: {board.SideToMove.name}, full-move counter: {board.FullMoveCounter}")
-
-# def handleStartingPositionFEN(board: BoardHandling) -> None:
-#     # Handle the starting position FEN string separately for readability of main.py
-#     logger.info(msg = f"Init: Importing starting position FEN string: {config.FEN_STARTING_POSITION}")
-#     importFEN(board = board, fen = config.FEN_STARTING_POSITION)
-    
-#     # We have to check if the imported FEN is already in check, as to seed our boardHandling.updateGameStateAfterMove() function.
-#     enemyColour: config.PieceColour = board.findOpposingColour(colour = board.SideToMove)
-#     kingPosition: tuple[int, int] = findKing(board = board, sourceColour = board.SideToMove)
-#     if isSquareAttacked(board = board, targetSquare = kingPosition, attackingColour = enemyColour):
-#         board.checkState.inCheck = True
-#         board.checkState.square = kingPosition
-#         board.checkState.colourInCheck = board.SideToMove
-#     else:
-#         board.checkState.inCheck = False
-#         board.checkState.square = (-1, -1)
-#         board.checkState.colourInCheck = None
-
-#     fenString: str = exportFEN(board = board)
-#     board.PositionHistory.append(config.MoveHistoryData(fen = fenString)) # Add the starting position to the position history
-#     board.PositionHistoryAsKeys.append(getFENasKey(fen = fenString)) # Add the starting position key to the position history keys for threefold
-#     board.moveHighlightingWithPositionHistory.append(config.MoveHighlighting())
-#     updateGameStateAfterMove(board = board)
