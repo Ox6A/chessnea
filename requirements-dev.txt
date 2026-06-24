@@ -1,4 +1,5 @@
 bandit==1.9.4
+basedpyright==1.39.8
 boolean.py==5.0
 CacheControl==0.14.4
 certifi==2026.6.17
@@ -6,6 +7,7 @@ charset-normalizer==3.4.7
 colorama==0.4.6
 cyclonedx-python-lib==11.11.0
 defusedxml==0.7.1
+execnet==2.1.2
 filelock==3.29.4
 idna==3.18
 iniconfig==2.3.0
@@ -14,6 +16,7 @@ mando==0.7.1
 markdown-it-py==4.2.0
 mdurl==0.1.2
 msgpack==1.2.1
+nodejs-wheel-binaries==24.16.0
 packageurl-python==0.17.6
 packaging==26.2
 pip-api==0.0.34
@@ -26,6 +29,7 @@ pygame-ce==2.5.7
 Pygments==2.20.0
 pyparsing==3.3.2
 pytest==9.1.1
+pytest-xdist==3.8.0
 PyYAML==6.0.3
 radon==6.0.1
 requests==2.34.2

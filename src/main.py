@@ -17,8 +17,8 @@ def main() -> None:
     environ["SDL_VSYNC"] = "1" # enable V-Sync
     _ = pygame.init()
     logger.info(msg = "Init: Pygame initialised!")
-    screen: pygame.Surface = pygame.display.set_mode(size = (config.WIDTH, config.HEIGHT))
-    logger.info(msg = f"Init: Display created with configuration: {config.WIDTH}x{config.HEIGHT} at {config.FPS} FPS")
+    screen: pygame.Surface = pygame.display.set_mode(size = (config.WindowDefaults.WINDOW_WIDTH.value, config.WindowDefaults.WINDOW_HEIGHT.value))
+    logger.info(msg = f"Init: Display created with configuration: {config.WindowDefaults.WINDOW_WIDTH.value}x{config.WindowDefaults.WINDOW_HEIGHT.value} at {config.WindowDefaults.FPS.value} FPS")
     pygame.display.set_caption("Chess")
     clock: pygame.time.Clock = pygame.time.Clock()
     board: boardHandling.BoardHandling = boardHandling.BoardHandling()
@@ -121,7 +121,7 @@ def main() -> None:
             currentCursor = cursorToUse
         menuBarInstance.drawMenuBar(screen = screen)
         pygame.display.flip()
-        _ = clock.tick(config.FPS)
+        _ = clock.tick(config.WindowDefaults.FPS.value)
 
     logger.info(msg = "Init: Exiting...")
     pygame.quit()

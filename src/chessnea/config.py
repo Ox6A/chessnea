@@ -9,15 +9,7 @@ import logging
 logger: logging.Logger = logging.getLogger(__name__)
 
 VERSION: str = "0.0.1"
-FPS: int = 60
-WIDTH: int = 800
-HEIGHT: int = 800
-BOARD_SIZE: int = 8
 PIECE_SET = "alpha"
-
-HEIGHT_PER_SQUARE: int = HEIGHT // BOARD_SIZE
-WIDTH_PER_SQUARE: int = WIDTH // BOARD_SIZE
-
 FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
@@ -43,6 +35,18 @@ def getFontPath(fontName: str, dir: Path) -> Path:
 
 FONT_REGULAR: Path = getFontPath(fontName = f"{FONT_FAMILY}-Regular.ttf", dir = FONT_DIRECTORY)
 FONT_MEDIUM: Path = getFontPath(fontName = f"{FONT_FAMILY}-Medium.ttf", dir = FONT_DIRECTORY)
+
+class WindowDefaults(Enum):
+	FPS = 60
+	TOP_BAR_HEIGHT = 50
+	BOARD_WIDTH = 800
+	BOARD_HEIGHT = 800
+	BOARD_SIZE = 8
+	WINDOW_WIDTH = 800
+	WINDOW_HEIGHT = BOARD_HEIGHT + TOP_BAR_HEIGHT
+
+HEIGHT_PER_SQUARE: int = WindowDefaults.BOARD_HEIGHT.value // WindowDefaults.BOARD_SIZE.value
+WIDTH_PER_SQUARE: int = WindowDefaults.BOARD_WIDTH.value // WindowDefaults.BOARD_SIZE.value
 
 class Piece(IntEnum): # LUT for integer equivalence for chess pieces
     PAWN = 0
