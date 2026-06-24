@@ -8,37 +8,46 @@ on:
 jobs:
   test:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: chessnea-test
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Check Python environment
         run: |
-          apt-get update
-          apt-get install -y python3 python3-venv python3-pip
-
-      - name: Install dependencies
-        run: |
-          python3 -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
+          python --version
+          python -m pip --version
+          python -m pip check
           python -m pip install -r requirements-dev.txt
 
       - name: Syntax check
         run: |
-          . .venv/bin/activate
           PYTHONDONTWRITEBYTECODE=1 python -m compileall -q src tests
+
+      - name: Ruff lint
+        run: |
+          ruff check src tests
+
+      - name: Security lint
+        run: |
+          bandit -r src
+
+      - name: Dependency audit
+        run: |
+          pip-audit -r requirements.txt
+
+      - name: Complexity report
+        run: |
+          radon cc src -a
+          radon mi src
 
       - name: Type check with basedpyright
         run: |
-          . .venv/bin/activate
           basedpyright
 
       - name: Run tests
         run: |
-          . .venv/bin/activate
           PYTHONPATH=src python -m pytest -n auto -q
 
   build-linux:
