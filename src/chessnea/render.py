@@ -14,7 +14,7 @@ class Rendering():
         self.colourState: list[tuple[int, int, int]] = [config.RenderingColours.SQUARE_BLACK.value, config.RenderingColours.SQUARE_WHITE.value]
         self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface() # cache board background surface
         self.flippedBoardBackgroundSurface: pygame.Surface = self.boardBackgroundSurface.copy()
-        self.promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT), pygame.SRCALPHA) # cache promotion overlay surface
+        self.promotionOverlaySurface: pygame.Surface = pygame.Surface((config.WindowDefaults.BOARD_WIDTH.value, config.WindowDefaults.BOARD_HEIGHT.value), pygame.SRCALPHA) # cache promotion overlay surface
         self.promotionBackgroundSurface: pygame.Surface = self.createGradient(
             size = (config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE),
             centreColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_CENTRE.value,
@@ -23,9 +23,9 @@ class Rendering():
         self.checkHighlightBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache check highlight surface
 
     def createBoardBackgroundSurface(self) -> pygame.Surface:
-        boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH, config.HEIGHT))
-        for row in range(config.BOARD_SIZE):
-            for col in range(config.BOARD_SIZE):
+        boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WindowDefaults.BOARD_WIDTH.value, config.WindowDefaults.BOARD_HEIGHT.value))
+        for row in range(config.WindowDefaults.BOARD_SIZE.value):
+            for col in range(config.WindowDefaults.BOARD_SIZE.value):
                 colour: tuple[int, int, int]
                 if (row + col) % 2 == 0:
                     colour = config.RenderingColours.SQUARE_WHITE.value
@@ -37,9 +37,9 @@ class Rendering():
     def drawBoardBackground(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         # Draw the coloured squares for the chess board
         if board.isBoardFlipped:
-            _ = screen.blit(source = self.flippedBoardBackgroundSurface, dest = (0, 0))
+            _ = screen.blit(source = self.flippedBoardBackgroundSurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
         else:
-            _ = screen.blit(source = self.boardBackgroundSurface, dest = (0, 0))
+            _ = screen.blit(source = self.boardBackgroundSurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
 
     def debugRenderingMethod(self, board: boardHandling.BoardHandling, screen: pygame.Surface) -> None:
         for row in range(len(board.Board)):
@@ -61,12 +61,12 @@ class Rendering():
                 if piece != config.Piece.EMPTY and board.piecePickedUp != (row, col):
                     sprite = board.sprites[colour.value][piece.value]
                     if sprite is None:
-                        logger.error(msg = f"ERROR at Render: Sprite for {colour.name} {piece.name} is None")
-                        raise ValueError(f"Sprite for {colour.name} {piece.name} is None")
+                        logger.error(msg = f"Render: Sprite for {colour.name} {piece.name} is None")
+                        raise ValueError(f"Render: Sprite for {colour.name} {piece.name} is None")
                     displayRow, displayCol = board.getDisplaySquare(square = (row, col))
                     squareRect: pygame.Rect = pygame.Rect(
                         displayCol * config.WIDTH_PER_SQUARE,
-                        displayRow * config.HEIGHT_PER_SQUARE,
+                        displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value,
                         config.WIDTH_PER_SQUARE,
                         config.HEIGHT_PER_SQUARE,
                     )
@@ -90,21 +90,21 @@ class Rendering():
                         radius = config.WIDTH_PER_SQUARE / 2 + config.WIDTH_PER_SQUARE // 4,
                         width = config.WIDTH_PER_SQUARE // 4)
                     displayRow, displayCol = board.getDisplaySquare(square = move.toSquare)
-                    _ = screen.blit(source = captureHighlightSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
+                    _ = screen.blit(source = captureHighlightSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value))
                 # legal move circle
                 else:
                     displayRow, displayCol = board.getDisplaySquare(square = move.toSquare)
                     _ = pygame.draw.circle(
                         surface = screen, 
                         color = config.RenderingColours.PIECE_LEGAL_MOVE_BACKGROUND.value, 
-                        center = (displayCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, displayRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2),
+                        center = (displayCol * config.WIDTH_PER_SQUARE + config.WIDTH_PER_SQUARE // 2, displayRow * config.HEIGHT_PER_SQUARE + config.HEIGHT_PER_SQUARE // 2 + config.WindowDefaults.TOP_BAR_HEIGHT.value),
                         radius = config.WIDTH_PER_SQUARE // 8)
 
         # moving piece square highlight
         if board.piecePickedUp != (-1, -1):
             displayRow, displayCol = board.getDisplaySquare(square = (board.piecePickedUp[0], board.piecePickedUp[1]))
-            _ = self.currentMoveBackgroundSurface.fill(config.RenderingColours.PIECE_PICKED_UP_BACKGROUND.value)
-            _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
+            _ = self.currentMoveBackgroundSurface.fill(color = config.RenderingColours.PIECE_PICKED_UP_BACKGROUND.value)
+            _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value))
 
         # picked up piece render
         if board.piecePickedUp != (-1, -1) and pickedUpSprite is not None:
@@ -116,20 +116,20 @@ class Rendering():
         if board.checkState.inCheck and board.checkState.square != (-1, -1):
             _ = self.checkHighlightBackgroundSurface.fill(config.RenderingColours.CHECK_HIGHLIGHT_BACKGROUND.value)
             displayRow, displayCol = board.getDisplaySquare(square = board.checkState.square)
-            _ = screen.blit(source = self.checkHighlightBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
+            _ = screen.blit(source = self.checkHighlightBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value))
 
     def renderMoveHighlighting(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> None:
         for square in [board.moveHighlighting.currentMove, board.moveHighlighting.previousMove]:
             if square != (-1, -1):
-                _ = self.currentMoveBackgroundSurface.fill(config.RenderingColours.PIECE_PREVIOUS_MOVE_BACKGROUND.value)
+                _ = self.currentMoveBackgroundSurface.fill(color = config.RenderingColours.PIECE_PREVIOUS_MOVE_BACKGROUND.value)
                 displayRow, displayCol = board.getDisplaySquare(square = square)
-                _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE))
+                _ = screen.blit(source = self.currentMoveBackgroundSurface, dest = (displayCol * config.WIDTH_PER_SQUARE, displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value))
 
     def renderPromotionChoice(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> list[tuple[pygame.Rect, config.Piece]]:
         if board.pendingPromotion is None:
             return []
         _ = self.promotionOverlaySurface.fill(color = config.RenderingColours.PROMOTION_CHOICE_BOARD_OVERLAY.value)
-        _ = screen.blit(source = self.promotionOverlaySurface, dest = (0, 0))
+        _ = screen.blit(source = self.promotionOverlaySurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
         toSquare: tuple[int, int] = board.pendingPromotion.toSquare
         colour: config.PieceColour = board.pendingPromotion.colour
         direction: int
@@ -149,7 +149,7 @@ class Rendering():
             displayRow, displayCol = board.getDisplaySquare(square = (row, col))
             rect: pygame.Rect = pygame.Rect(
                 displayCol * config.WIDTH_PER_SQUARE,
-                displayRow * config.HEIGHT_PER_SQUARE,
+                displayRow * config.HEIGHT_PER_SQUARE + config.WindowDefaults.TOP_BAR_HEIGHT.value,
                 config.WIDTH_PER_SQUARE,
                 config.HEIGHT_PER_SQUARE,
             )
