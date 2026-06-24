@@ -1,12 +1,10 @@
 # pyright: reportAny = false
 import os
-from pathlib import Path
-import sys
-import chessnea.board as boardHandling
 import pytest
 
-_ = os.environ.setdefault(key = "SDL_VIDEODRIVER", value = "dummy")
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import chessnea.board as boardHandling
+
+_ = os.environ.setdefault(key="SDL_VIDEODRIVER", value="dummy")
 
 @pytest.fixture
 def newBoard() -> boardHandling.BoardHandling:

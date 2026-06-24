@@ -92,9 +92,9 @@ def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
 
 class MenuBar():
     def __init__(self)  -> None:
-        self.hidden: bool = True
+        self.hidden: bool = False
         self.height: int = 50
-        self.width: int = config.WIDTH
+        self.width: int = config.WindowDefaults.WINDOW_WIDTH.value
         self.hideTimeout: float = 0.5
         self.menuItems: list[config.MenuItem] = []
         self.fontRegular: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_REGULAR), size = 24)
