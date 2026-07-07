@@ -195,22 +195,22 @@ class Rendering():
         _ = self.gameOverMenuSurface.fill(color = config.RenderingColours.DIMMED_BOARD_OVERLAY.value)
         _ = screen.blit(source = self.gameOverMenuSurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
         title, subtitle = getGameOverMessage(gameState = board.gameState)
+        titleSurface: pygame.Surface = self.gameOverFontLarge.render(text = title, antialias = True, color = config.UIColours.TEXT_PRIMARY.value)
+        subtitleSurface: pygame.Surface = self.gameOverFontSmall.render(text = subtitle, antialias = True, color = config.UIColours.TEXT_SECONDARY.value)
+        maxTextWidth: int = max(titleSurface.get_width(), subtitleSurface.get_width())
+        maxTextHeight: int = titleSurface.get_height() + subtitleSurface.get_height()
 
-        titlePanelWidth: int = config.WindowDefaults.BOARD_WIDTH.value // 2
-        titlePanelHeight: int = config.WindowDefaults.BOARD_HEIGHT.value // 4
+        titlePanelWidth: int = max(maxTextWidth, config.WindowDefaults.BOARD_WIDTH.value // 2) + 80
+        titlePanelHeight: int = max(maxTextHeight, config.WindowDefaults.BOARD_HEIGHT.value // 4) + 80
         titlePanelX: int = (config.WindowDefaults.BOARD_WIDTH.value - titlePanelWidth) // 2
         titlePanelY: int = (config.WindowDefaults.BOARD_HEIGHT.value - titlePanelHeight) // 2
         titlePanelRect: pygame.Rect = pygame.Rect(titlePanelX, titlePanelY, titlePanelWidth, titlePanelHeight)
         _ = ui.drawSmoothRoundedRect(surface = screen, colour = config.UIColours.SURFACE.value, rect = titlePanelRect, radius = 16)
 
-        titleSurface: pygame.Surface = self.gameOverFontLarge.render(text = title, antialias = True, color = config.UIColours.TEXT_PRIMARY.value)
         titleRect: pygame.Rect = titleSurface.get_rect(centerx = titlePanelRect.centerx, centery = titlePanelRect.centery - config.WindowDefaults.BOARD_HEIGHT.value // 16)
         _ = screen.blit(source=titleSurface, dest=titleRect)
-
-        if subtitle:
-            subtitleSurface: pygame.Surface = self.gameOverFontSmall.render(text = subtitle, antialias = True, color = config.UIColours.TEXT_SECONDARY.value)
-            subtitleRect: pygame.Rect = subtitleSurface.get_rect(centerx = titlePanelRect.centerx, centery = titlePanelRect.centery - config.WindowDefaults.BOARD_HEIGHT.value // 160)
-            _ = screen.blit(source = subtitleSurface, dest = subtitleRect)
+        subtitleRect: pygame.Rect = subtitleSurface.get_rect(centerx = titlePanelRect.centerx, centery = titlePanelRect.centery - config.WindowDefaults.BOARD_HEIGHT.value // 160)
+        _ = screen.blit(source = subtitleSurface, dest = subtitleRect)
 
         newGameButtonWidth: int = config.WindowDefaults.BOARD_WIDTH.value // 4
         newGameButtonHeight: int = config.WindowDefaults.BOARD_HEIGHT.value // 16
