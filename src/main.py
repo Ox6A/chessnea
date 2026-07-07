@@ -32,6 +32,7 @@ def main() -> None:
     _ = board.resetBoard()
     running: bool = True
     promotionUIRects: list[tuple[pygame.Rect, config.Piece]] = []
+    gameOverButtonRects: list[tuple[pygame.Rect, str]] = []
     logger.info(msg = "Init: Initialisation finished")
     logger.info(msg = "Init: Started main game loop")
     currentCursor:int = pygame.SYSTEM_CURSOR_ARROW
@@ -69,6 +70,14 @@ def main() -> None:
                             board.piecePickedUpLegalMoves = boardHandling.getLegalMovesForPiece(board = board, row = row, col = col)
                             logger.debug(msg = f"Main: Picked up piece at square {targetSquare} of type {board.Board[targetSquare[0]][targetSquare[1]][0]} and colour {board.Board[targetSquare[0]][targetSquare[1]][1]}")
             elif event.type == pygame.MOUSEBUTTONUP:
+                if board.gameState.gameOver:
+                    for buttonRect, callback in gameOverButtonRects:
+                        if buttonRect.collidepoint(mouseX, mouseY):
+                            if callback == "newGame":
+                                _ = board.resetBoard()
+                                board.syncBoardFlipStateToSideToMove()
+                                logger.info(msg = "Main: Reset board after game over")
+                            break
                 if hoveringOverButton:
                     if hoveringOverButton.children and menuBarInstance.openItem == hoveringOverButton:
                         menuBarInstance.openItem = None
@@ -79,7 +88,7 @@ def main() -> None:
                             hoveringOverButton.toggled = not hoveringOverButton.toggled
                             _ = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
                         else:
-                            returnType = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            returnType: config.ReturnType = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
                             if returnType == config.ReturnType.QUIT_GAME:
                                 running = False
                             menuBarInstance.openItem = None
@@ -98,6 +107,7 @@ def main() -> None:
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen = screen, board = board)
         promotionUIRects = renderThreadInstance.renderPromotionChoice(screen = screen, board = board)
+        gameOverButtonRects = renderThreadInstance.renderGameOver(screen = screen, board = board)
 
         cursorToUse: int = pygame.SYSTEM_CURSOR_ARROW
         if hoveringOverButton:
@@ -116,6 +126,12 @@ def main() -> None:
                 piece, colour = board.Board[row][col]
                 if piece != config.Piece.EMPTY and colour == board.SideToMove:
                     cursorToUse = pygame.SYSTEM_CURSOR_CROSSHAIR
+        elif board.gameState.gameOver:
+            for buttonRect, _ in gameOverButtonRects:
+                if buttonRect.collidepoint(mouseX, mouseY):
+                    cursorToUse = pygame.SYSTEM_CURSOR_HAND
+                    break
+
         if cursorToUse != currentCursor:
             pygame.mouse.set_cursor(cursorToUse)
             currentCursor = cursorToUse

@@ -4,6 +4,7 @@ import pygame
 
 import chessnea.config as config
 import chessnea.board as boardHandling
+import chessnea.ui as ui
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -11,6 +12,9 @@ class Rendering():
     # Handle all board rendering functions
     def __init__(self) -> None:
         self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
+        self.gameOverFontLarge: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_MEDIUM), size = 48)
+        self.gameOverFontSmall: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_REGULAR), size = 24)
+        self.gameOverFontButton: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_MEDIUM), size = 28)
         self.colourState: list[tuple[int, int, int]] = [config.RenderingColours.SQUARE_BLACK.value, config.RenderingColours.SQUARE_WHITE.value]
         self.boardBackgroundSurface: pygame.Surface = self.createBoardBackgroundSurface() # cache board background surface
         self.flippedBoardBackgroundSurface: pygame.Surface = self.boardBackgroundSurface.copy()
@@ -21,6 +25,7 @@ class Rendering():
             edgeColour = config.RenderingGradientColours.PROMOTION_CHOICE_BACKGROUND_EDGE.value) # cache promotion UI
         self.currentMoveBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache move highlight surface
         self.checkHighlightBackgroundSurface: pygame.Surface = pygame.Surface((config.WIDTH_PER_SQUARE, config.HEIGHT_PER_SQUARE), pygame.SRCALPHA) # cache check highlight surface
+        self.gameOverMenuSurface: pygame.Surface = pygame.Surface((config.WindowDefaults.BOARD_WIDTH.value, config.WindowDefaults.BOARD_HEIGHT.value), pygame.SRCALPHA)
 
     def createBoardBackgroundSurface(self) -> pygame.Surface:
         boardBackgroundSurface: pygame.Surface = pygame.Surface((config.WindowDefaults.BOARD_WIDTH.value, config.WindowDefaults.BOARD_HEIGHT.value))
@@ -128,7 +133,7 @@ class Rendering():
     def renderPromotionChoice(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> list[tuple[pygame.Rect, config.Piece]]:
         if board.pendingPromotion is None:
             return []
-        _ = self.promotionOverlaySurface.fill(color = config.RenderingColours.PROMOTION_CHOICE_BOARD_OVERLAY.value)
+        _ = self.promotionOverlaySurface.fill(color = config.RenderingColours.DIMMED_BOARD_OVERLAY.value)
         _ = screen.blit(source = self.promotionOverlaySurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
         toSquare: tuple[int, int] = board.pendingPromotion.toSquare
         colour: config.PieceColour = board.pendingPromotion.colour
@@ -183,3 +188,70 @@ class Rendering():
                     alpha = int(alpha * ((((min(width, height) / 2) - distanceToCentre) / 3)))
                 gradientSurface.set_at((x, y), (red, green, blue, alpha))
         return gradientSurface
+
+    def renderGameOver(self, screen: pygame.Surface, board: boardHandling.BoardHandling) -> list[tuple[pygame.Rect, str]]:
+        if not board.gameState.gameOver:
+            return []
+        _ = self.gameOverMenuSurface.fill(color = config.RenderingColours.DIMMED_BOARD_OVERLAY.value)
+        _ = screen.blit(source = self.gameOverMenuSurface, dest = (0, config.WindowDefaults.TOP_BAR_HEIGHT.value))
+        title, subtitle = getGameOverMessage(gameState = board.gameState)
+
+        titlePanelWidth: int = config.WindowDefaults.BOARD_WIDTH.value // 2
+        titlePanelHeight: int = config.WindowDefaults.BOARD_HEIGHT.value // 4
+        titlePanelX: int = (config.WindowDefaults.BOARD_WIDTH.value - titlePanelWidth) // 2
+        titlePanelY: int = (config.WindowDefaults.BOARD_HEIGHT.value - titlePanelHeight) // 2
+        titlePanelRect: pygame.Rect = pygame.Rect(titlePanelX, titlePanelY, titlePanelWidth, titlePanelHeight)
+        _ = ui.drawSmoothRoundedRect(surface = screen, colour = config.UIColours.SURFACE.value, rect = titlePanelRect, radius = 16)
+
+        titleSurface: pygame.Surface = self.gameOverFontLarge.render(text = title, antialias = True, color = config.UIColours.TEXT_PRIMARY.value)
+        titleRect: pygame.Rect = titleSurface.get_rect(centerx = titlePanelRect.centerx, centery = titlePanelRect.centery - config.WindowDefaults.BOARD_HEIGHT.value // 16)
+        _ = screen.blit(source=titleSurface, dest=titleRect)
+
+        if subtitle:
+            subtitleSurface: pygame.Surface = self.gameOverFontSmall.render(text = subtitle, antialias = True, color = config.UIColours.TEXT_SECONDARY.value)
+            subtitleRect: pygame.Rect = subtitleSurface.get_rect(centerx = titlePanelRect.centerx, centery = titlePanelRect.centery - config.WindowDefaults.BOARD_HEIGHT.value // 160)
+            _ = screen.blit(source = subtitleSurface, dest = subtitleRect)
+
+        newGameButtonWidth: int = config.WindowDefaults.BOARD_WIDTH.value // 4
+        newGameButtonHeight: int = config.WindowDefaults.BOARD_HEIGHT.value // 16
+        newGameButtonX: int = titlePanelRect.centerx - newGameButtonWidth // 2
+        newGameButtonY: int = titlePanelRect.bottom - config.WindowDefaults.BOARD_HEIGHT.value // 10
+        newGameButtonRect: pygame.Rect = pygame.Rect(newGameButtonX, newGameButtonY, newGameButtonWidth, newGameButtonHeight)
+
+        mouseX, mouseY = pygame.mouse.get_pos()
+        newGameButtonHovered: bool = newGameButtonRect.collidepoint(mouseX, mouseY)
+        newGameButtonColour: tuple[int, int, int, int] = config.UIColours.ACTION_HOVER.value if newGameButtonHovered else config.UIColours.SURFACE.value
+        _ = ui.drawSmoothRoundedRect(surface = screen, colour = newGameButtonColour, rect = newGameButtonRect, radius = 8)
+        _ = ui.drawSmoothRoundedRect(surface = screen, colour = config.UIColours.OUTLINE.value, rect = newGameButtonRect, radius = 8, width = 2)
+
+        newGameButtonText = self.gameOverFontButton.render(text = "New Game", antialias = True, color = config.UIColours.TEXT_PRIMARY.value)
+        newGameButtonTextRect: pygame.Rect = newGameButtonText.get_rect(center = newGameButtonRect.center)
+        _ = screen.blit(source = newGameButtonText, dest = newGameButtonTextRect)
+        return [(newGameButtonRect, "newGame")]
+
+        
+def getGameOverMessage(gameState: config.GameState) -> tuple[str, str]:
+    reason: config.GameOverReason | None = gameState.reason
+    winner: config.PieceColour | None = gameState.winner
+    title: str
+    subtitle: str = ""
+    if reason == config.GameOverReason.CHECKMATE:
+        winnerName: str
+        if winner == config.PieceColour.WHITE:
+            winnerName = "White"
+        else:
+            winnerName = "Black"
+        title = "Checkmate"
+        subtitle = f"{winnerName} wins!"
+    elif reason == config.GameOverReason.STALEMATE:
+        title = "Draw by Stalemate"
+        subtitle = "The game is a draw as no further moves can be made!"
+    elif reason == config.GameOverReason.FIFTY_MOVE_RULE:
+        title = "Draw by threefold repetition"
+        subtitle = "The same position has occurred 3 times!"
+    elif reason == config.GameOverReason.INSUFFICIENT_MATERIAL:
+        title = "Draw by insufficient material"
+        subtitle = "There isn't sufficient material to continue the game!"
+    else:
+        raise ValueError("GameOverReason was not in expected list!")
+    return (title, subtitle)
