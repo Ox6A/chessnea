@@ -12,7 +12,7 @@ def loadBoardInUI(board: BoardHandling) -> None:
     global boardInstance
     boardInstance = board
 
-def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, int], rect: pygame.Rect, radius: int) -> pygame.Rect:
+def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, int], rect: pygame.Rect, radius: int, width: int = 0) -> pygame.Rect:
     scaleFactor: int = 4
     enlargedSurface: pygame.Surface = pygame.Surface(
         size = (rect.width * scaleFactor, rect.height * scaleFactor), 
@@ -22,7 +22,8 @@ def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, 
         surface = enlargedSurface, 
         color = colour, 
         rect = pygame.Rect(0, 0, rect.width * scaleFactor, rect.height * scaleFactor), 
-        border_radius = radius * scaleFactor)
+        border_radius = radius * scaleFactor,
+        width = width * scaleFactor)
 
     smoothSurface: pygame.Surface = pygame.transform.smoothscale(surface = enlargedSurface, size = (rect.width, rect.height))
     return surface.blit(source = smoothSurface, dest = rect)

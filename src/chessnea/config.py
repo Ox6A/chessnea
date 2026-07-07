@@ -191,7 +191,7 @@ class RenderingColours(Enum): # Lichess (lichess.org) default colour scheme
     PIECE_PICKED_UP_BACKGROUND = (60, 200, 60, 128)
     PIECE_LEGAL_MOVE_BACKGROUND = (60, 200, 60, 128)
     PIECE_PREVIOUS_MOVE_BACKGROUND = (210, 210, 0, 128)
-    PROMOTION_CHOICE_BOARD_OVERLAY = (0, 0, 0, 90)
+    DIMMED_BOARD_OVERLAY = (0, 0, 0, 90)
     CHECK_HIGHLIGHT_BACKGROUND = (255, 30, 20, 128)
 
 class RenderingGradientColours(Enum):
