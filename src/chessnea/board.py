@@ -498,6 +498,12 @@ def getAllLegalMovesForSide(board: BoardHandling, colour: config.PieceColour) ->
     return legalMoves
 
 def updateGameStateAfterMove(board: BoardHandling) -> None:
+    if checkForInsufficientMaterial(board = board):
+        board.gameState.gameOver = True
+        board.gameState.winner = None
+        board.gameState.reason = config.GameOverReason.INSUFFICIENT_MATERIAL
+        logger.info(msg = "Board: Game drawn by insufficient material")
+        return
     if checkForThreefoldRepetition(board = board):
         board.gameState.gameOver = True
         board.gameState.winner = None
@@ -633,6 +639,48 @@ def checkForThreefoldRepetition(board: BoardHandling) -> bool:
         logger.info(msg = f"Board: Detected threefold repetition with position {currentPosition} occurring {repetitionCount} times in the game history")
         return True
     return False
+
+def checkForInsufficientMaterial(board: BoardHandling) -> bool:
+    whitePieces: list[config.Piece] = []
+    blackPieces: list[config.Piece] = []
+    whitePiecesWithPositions: list[tuple[config.Piece, tuple[int, int]]] = []
+    blackPiecesWithPositions: list[tuple[config.Piece, tuple[int, int]]] = []
+    for rowIndex, row in enumerate[list[tuple[config.Piece, config.PieceColour]]](board.Board):
+        for colIndex, (piece, colour) in enumerate[tuple[config.Piece, config.PieceColour]](row):
+            if piece != config.Piece.EMPTY:
+                if colour == config.PieceColour.WHITE:
+                    whitePieces.append(piece)
+                    whitePiecesWithPositions.append((piece, (rowIndex, colIndex)))
+                else:
+                    blackPieces.append(piece)
+                    blackPiecesWithPositions.append((piece, (rowIndex, colIndex)))
+    # king vs king
+    if len(whitePieces) == 1 and len(blackPieces) == 1:
+        return True
+
+    # king and bishop/ knight vs king
+    if (len(whitePieces)) == 2 and len(blackPieces) == 1:
+        if config.Piece.BISHOP in whitePieces or config.Piece.KNIGHT in whitePieces:
+            return True
+    if (len(blackPieces)) == 2 and len(whitePieces) == 1:
+        if config.Piece.BISHOP in blackPieces or config.Piece.KNIGHT in blackPieces:
+            return True
+    
+    # king and bishop vs king and bishop (same colour bishops)
+    if len(whitePieces) == 2 and len(blackPieces) == 2:
+        whiteBishopSquareColour: int = 0
+        blackBishopSquareColour: int = 0
+        for piece, position in whitePiecesWithPositions:
+            if piece == config.Piece.BISHOP:
+                whiteBishopSquareColour = (position[0] + position[1]) % 2
+        for piece, position in blackPiecesWithPositions:
+            if piece == config.Piece.BISHOP:
+                blackBishopSquareColour = (position[0] + position[1]) % 2
+        if whiteBishopSquareColour == blackBishopSquareColour:
+            return True
+    return False
+
+
 
 def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tuple[int, int]) -> bool:
     fromRow, fromCol, toRow, toCol = fromSquare[0], fromSquare[1], toSquare[0], toSquare[1]
