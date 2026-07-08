@@ -14,6 +14,8 @@ FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq
 FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
 FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_SQUARE_CHARACTERS
+DEFAULT_STARTING_TIME: int = 600
+DEFAULT_STARTING_INCREMENT: int = 0
 
 def getRelativePathToAssets(assetsDir: str) -> Path:
     basePath = getattr(sys, "_MEIPASS", None)
@@ -34,6 +36,7 @@ def getFontPath(fontName: str, dir: Path) -> Path:
     raise FileNotFoundError(f"Font file not found: {fontName}")
 
 FONT_REGULAR: Path = getFontPath(fontName = f"{FONT_FAMILY}-Regular.ttf", dir = FONT_DIRECTORY)
+FONT_BOLD: Path = getFontPath(fontName = f"{FONT_FAMILY}-Bold.ttf", dir = FONT_DIRECTORY)
 FONT_MEDIUM: Path = getFontPath(fontName = f"{FONT_FAMILY}-Medium.ttf", dir = FONT_DIRECTORY)
 
 class WindowDefaults(Enum):
@@ -116,6 +119,7 @@ class GameOverReason(IntEnum): # LUT for integer equivalence of possible game ov
     INSUFFICIENT_MATERIAL = 2
     THREEFOLD_REPETITION = 3
     FIFTY_MOVE_RULE = 4
+    TIMEOUT = 5
 
 @dataclass
 class GameState():
@@ -126,6 +130,8 @@ class GameState():
 @dataclass(frozen = True)
 class MoveHistoryData:
     fen: str
+    whiteClock: float
+    blackClock: float
     move: MoveData | None = None
     piece: Piece = Piece.EMPTY
     colour: PieceColour = PieceColour.WHITE
@@ -233,9 +239,9 @@ class UIColours(Enum):
     OUTLINE = (180, 180, 180, 255)           # rgba(255, 255, 255, 0.12) changed
 
     TEXT_PRIMARY = (255, 255, 255, 255)     # #FFFFFF
-    TEXT_SECONDARY = (255, 255, 255, 179)   # rgba(255, 255, 255, 0.7)
-    TEXT_DISABLED = (255, 255, 255, 128)    # rgba(255, 255, 255, 0.5)
-    TEXT_ON_PRIMARY = (0, 0, 0, 222)        # rgba(0, 0, 0, 0.87)
+    TEXT_SECONDARY = (184, 184, 184, 255)   # rgba(255, 255, 255, 0.7) changed
+    TEXT_DISABLED = (137, 137, 137, 255)    # rgba(255, 255, 255, 0.5) changed
+    TEXT_ON_PRIMARY = (19, 26, 32, 255)     # rgba(0, 0, 0, 0.87) changed
 
     ACTION_ACTIVE = (255, 255, 255, 255)    # #FFFFFF
     ACTION_HOVER = (37, 37, 37, 255)      # rgba(255, 255, 255, 0.08) changed
