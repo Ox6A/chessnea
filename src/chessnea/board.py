@@ -32,6 +32,7 @@ class BoardHandling():
         self.moveHighlightingWithPositionHistory: list[config.MoveHighlighting] = []
         self.isBoardFlipped: bool = False
         self.isBoardFlippingEnabled: bool = False
+        self.hasFirstMoveHappened: bool = False
         
     def resetBoard(self) -> config.ReturnType:
         fen.importFEN(board = self, fen = config.FEN_STARTING_POSITION)
@@ -43,9 +44,10 @@ class BoardHandling():
         self.gameState = config.GameState()
         self.syncBoardFlipStateToSideToMove()
         fenString: str = fen.exportFEN(board = self)
-        self.PositionHistory = [config.MoveHistoryData(fen = fenString)]
+        self.PositionHistory = [config.MoveHistoryData(fen = fenString, whiteClock = 0.0, blackClock = 0.0)]
         self.PositionHistoryAsKeys = [fen.getFENasKey(fen = fenString)]
         self.moveHighlightingWithPositionHistory = [config.MoveHighlighting()]
+        self.hasFirstMoveHappened = False
         return config.ReturnType.NORMAL
 
     def refreshGameStateAfterFENLoad(self) -> None:
@@ -63,6 +65,7 @@ class BoardHandling():
             self.checkState.colourInCheck = self.SideToMove
         self.syncBoardFlipStateToSideToMove()
         updateGameStateAfterMove(board = self)
+        self.hasFirstMoveHappened = True
 
     def undoMove(self) -> config.ReturnType:
         if len(self.PositionHistory) <= 1:
@@ -77,6 +80,7 @@ class BoardHandling():
         fen.importFEN(board = self, fen = previousPosition.fen)
         self.refreshGameStateAfterFENLoad()
         if len(self.PositionHistory) == 1:
+            self.hasFirstMoveHappened = False
             self.moveHighlighting = config.MoveHighlighting()
         elif len(self.moveHighlightingWithPositionHistory) > 0:
             self.moveHighlighting = self.moveHighlightingWithPositionHistory[-1]
@@ -611,7 +615,9 @@ def completePromotion(board: BoardHandling, promotionPieceType: config.Piece | N
             gameOver = board.gameState.gameOver,
             winner = board.gameState.winner,
             reason = board.gameState.reason
-        )
+        ),
+        whiteClock = 0.0,
+        blackClock = 0.0
     ))
     board.pendingPromotion = None
     board.PositionHistoryAsKeys.append(fen.getFENasKey(fen = fenString))
@@ -770,7 +776,9 @@ def processMove(board: BoardHandling, fromSquare: tuple[int, int], toSquare: tup
             gameOver = board.gameState.gameOver,
             winner = board.gameState.winner,
             reason = board.gameState.reason
-        )
+        ),
+        whiteClock = 0.0,
+        blackClock = 0.0
     )
     updateGameStateAfterMove(board = board)
     board.PositionHistory.append(data)
