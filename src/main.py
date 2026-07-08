@@ -7,6 +7,7 @@ import chessnea.config as config
 import chessnea.board as boardHandling
 import chessnea.render as render
 import chessnea.ui as ui
+import chessnea.clock as clockHandling
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -26,8 +27,12 @@ def main() -> None:
     renderThreadInstance: render.Rendering = render.Rendering()
     logger.info(msg = "Init: Starting main UI...")
     menuBarInstance: ui.MenuBar = ui.MenuBar()
-    ui.addStandardUIItems(menuBarInstance = menuBarInstance)
+    gameBarInstance: ui.MenuBar = ui.MenuBar()
+    ui.addStandardUIItems(menuBarInstance = menuBarInstance, gameBarInstance = gameBarInstance)
     ui.loadBoardInUI(board = board)
+    ui.loadMenuBar(menuBar = menuBarInstance)
+    ui.loadGameBar(gameBar = gameBarInstance)
+    clockInstance = ui.loadClock(clock = clockHandling.Clock())
     logger.info(msg = "Init: Started UI initialisation")
     _ = board.resetBoard()
     running: bool = True
@@ -38,19 +43,19 @@ def main() -> None:
     currentCursor:int = pygame.SYSTEM_CURSOR_ARROW
     while running:
         mouseX, mouseY = pygame.mouse.get_pos()
-        hoveringOverButton: config.MenuItem | None = menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
+        menuBarHoveringOverButton: config.MenuItem | None = menuBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
+        gameBarHoveringOverButton: config.MenuItem | None = gameBarInstance.checkIfHoveringOverMenuItem(mouseX = mouseX, mouseY = mouseY)
+        hoveringOverButton: config.MenuItem | None = menuBarHoveringOverButton or gameBarHoveringOverButton
         for event in pygame.event.get():
             targetSquare: tuple[int, int] | tuple[typing.Literal[-1], typing.Literal[-1]]
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:  
-                key = typing.cast(int, event.key)
-                if key == pygame.K_TAB:
-                    menuBarInstance.hidden = not menuBarInstance.hidden
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if hoveringOverButton:
                     continue
                 if not board.gameState.gameOver:
+                    if board.hasFirstMoveHappened and not clockInstance.clockRunning:
+                        continue
                     if board.pendingPromotion:
                         mouseX, mouseY = pygame.mouse.get_pos()
                         for uiRect, piece in promotionUIRects:
@@ -74,35 +79,71 @@ def main() -> None:
                     for buttonRect, callback in gameOverButtonRects:
                         if buttonRect.collidepoint(mouseX, mouseY):
                             if callback == "newGame":
-                                _ = board.resetBoard()
-                                board.syncBoardFlipStateToSideToMove()
+                                _ = ui.ConnectorFunctions.newGame()
                                 logger.info(msg = "Main: Reset board after game over")
                             break
+                returnType: config.ReturnType
                 if hoveringOverButton:
-                    if hoveringOverButton.children and menuBarInstance.openItem == hoveringOverButton:
-                        menuBarInstance.openItem = None
-                    elif hoveringOverButton.children:
-                        menuBarInstance.openItem = hoveringOverButton
-                    else:
-                        if hoveringOverButton.itemType == config.ItemType.TOGGLE:
-                            hoveringOverButton.toggled = not hoveringOverButton.toggled
-                            _ = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
-                        else:
-                            returnType: config.ReturnType = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
-                            if returnType == config.ReturnType.QUIT_GAME:
-                                running = False
+                    if not menuBarInstance.hidden:
+                        if hoveringOverButton.children and menuBarInstance.openItem == hoveringOverButton:
                             menuBarInstance.openItem = None
-                    continue
+                        elif hoveringOverButton.children:
+                            menuBarInstance.openItem = hoveringOverButton
+                        else:
+                            if hoveringOverButton.itemType == config.ItemType.TOGGLE:
+                                if hoveringOverButton.name == "Pause Game" and not board.hasFirstMoveHappened:
+                                    logger.warning(msg = "Main: Cannot pause as no moves have been made yet!")
+                                    continue
+                                hoveringOverButton.toggled = not hoveringOverButton.toggled
+                                _ = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            else:
+                                returnType = menuBarInstance.runConnectorFunction(item = hoveringOverButton)
+                                if returnType == config.ReturnType.QUIT_GAME:
+                                    running = False
+                                menuBarInstance.openItem = None
+                        continue
+                    else:
+                        if hoveringOverButton.children and gameBarInstance.openItem == hoveringOverButton:
+                            gameBarInstance.openItem = None
+                        elif hoveringOverButton.children:
+                            gameBarInstance.openItem = hoveringOverButton
+                        else:
+                            if hoveringOverButton.itemType == config.ItemType.TOGGLE:
+                                hoveringOverButton.toggled = not hoveringOverButton.toggled
+                                _ = gameBarInstance.runConnectorFunction(item = hoveringOverButton)
+                            else:
+                                returnType = gameBarInstance.runConnectorFunction(item = hoveringOverButton)
+                                if returnType == config.ReturnType.QUIT_GAME:
+                                    running = False
+                                gameBarInstance.openItem = None
+                        continue
                 if not board.gameState.gameOver:
                     if board.pendingPromotion:
+                        continue
+                    if board.hasFirstMoveHappened and not clockInstance.clockRunning:
+                        board.piecePickedUp = (-1, -1)
+                        board.piecePickedUpLegalMoves = []
                         continue
                     targetSquare = board.getSquareUnderMousePosition() or (-1, -1)
                     valid: bool = boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
                     if valid and board.pendingPromotion is None:
                         board.syncBoardFlipStateToSideToMove()
-
                     board.piecePickedUp = (-1, -1)
                     board.piecePickedUpLegalMoves = []
+                    if valid and not board.hasFirstMoveHappened:
+                        board.hasFirstMoveHappened = True
+                        logger.info(msg = "Main: Starting clock after first move")
+                        clockInstance.setClockRunning(running = True)
+
+        if not board.gameState.gameOver:
+            if clockInstance.updateClock(sideToMove = board.SideToMove):
+                board.gameState.gameOver = True                                                                                 
+                board.gameState.winner = board.findOpposingColour(colour = board.SideToMove)                                    
+                board.gameState.reason = config.GameOverReason.TIMEOUT                                                          
+                board.piecePickedUp = (-1, -1)                                                                                  
+                board.piecePickedUpLegalMoves = []                                                                              
+                board.pendingPromotion = None                                                                                   
+                logger.info(msg = f"Main: {board.SideToMove.name} ran out of time")
         renderThreadInstance.drawBoardBackground(screen = screen, board = board)
         #renderThreadInstance.debugRenderingMethod(board, screen)
         renderThreadInstance.renderBoard(screen = screen, board = board)
@@ -136,6 +177,7 @@ def main() -> None:
             pygame.mouse.set_cursor(cursorToUse)
             currentCursor = cursorToUse
         menuBarInstance.drawMenuBar(screen = screen)
+        gameBarInstance.drawMenuBar(screen = screen)
         pygame.display.flip()
         _ = clock.tick(config.WindowDefaults.FPS.value)
 

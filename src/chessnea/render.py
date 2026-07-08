@@ -247,11 +247,21 @@ def getGameOverMessage(gameState: config.GameState) -> tuple[str, str]:
         title = "Draw by Stalemate"
         subtitle = "The game is a draw as no further moves can be made!"
     elif reason == config.GameOverReason.FIFTY_MOVE_RULE:
+        title = "Draw by fifty-move rule"
+        subtitle = "No pawn moves or captures have been made in the last 50 moves!"
+    elif reason == config.GameOverReason.THREEFOLD_REPETITION:
         title = "Draw by threefold repetition"
         subtitle = "The same position has occurred 3 times!"
     elif reason == config.GameOverReason.INSUFFICIENT_MATERIAL:
         title = "Draw by insufficient material"
         subtitle = "There isn't sufficient material to continue the game!"
+    elif reason == config.GameOverReason.TIMEOUT:
+        if winner == config.PieceColour.WHITE:
+            winnerName = "White"
+        else:
+            winnerName = "Black"
+        title = "Timeout"
+        subtitle = f"{winnerName} wins on time!"
     else:
         raise ValueError("GameOverReason was not in expected list!")
     return (title, subtitle)
