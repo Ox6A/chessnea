@@ -4,13 +4,31 @@ import logging
 from chessnea.board import BoardHandling
 import chessnea.config as config
 import chessnea.pgn as pgn
+import chessnea.clock as clockHandling
 
 boardInstance: BoardHandling
+menuBarInstance: "MenuBar"
+gameBarInstance: "MenuBar"
+clockInstance: clockHandling.Clock
 logger: logging.Logger = logging.getLogger(name = __name__)
+
 
 def loadBoardInUI(board: BoardHandling) -> None:
     global boardInstance
     boardInstance = board
+
+def loadMenuBar(menuBar: "MenuBar") -> None:
+    global menuBarInstance
+    menuBarInstance = menuBar
+
+def loadGameBar(gameBar: "MenuBar") -> None:
+    global gameBarInstance
+    gameBarInstance = gameBar
+
+def loadClock(clock: clockHandling.Clock) -> clockHandling.Clock:
+    global clockInstance
+    clockInstance = clock
+    return clockInstance
 
 def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, int], rect: pygame.Rect, radius: int, width: int = 0) -> pygame.Rect:
     scaleFactor: int = 4
@@ -28,21 +46,30 @@ def drawSmoothRoundedRect(surface: pygame.Surface, colour: tuple[int, int, int, 
     smoothSurface: pygame.Surface = pygame.transform.smoothscale(surface = enlargedSurface, size = (rect.width, rect.height))
     return surface.blit(source = smoothSurface, dest = rect)
 
-def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
-    # Exit
+def addStandardUIItems(menuBarInstance: "MenuBar", gameBarInstance: "MenuBar") -> None:
+    # Menu Bar
+    menuBarInstance.hidden = True
+    # Back to Game Bar
     menuBarInstance.addMenuItem(
         item = config.MenuItem(
-            name = "Exit", 
-            itemType = config.ItemType.BUTTON, 
-            children = None, 
-            connector = ConnectorFunctions.exitGame,
+            name = "Back",
+            itemType = config.ItemType.BUTTON,
+            children = None,
+            connector = ConnectorFunctions.toggleGameBar,
             paddedRight = True))
+
     # Game Settings
     menuBarInstance.addMenuItem(
         item = config.MenuItem(
             name = "Game",
             itemType = config.ItemType.DROPDOWN,
             children = [
+                config.MenuItem(
+                    name = "Pause Game",
+                    itemType = config.ItemType.TOGGLE,
+                    children = None,
+                    connector = ConnectorFunctions.toggleClock
+                ),
                 config.MenuItem(
                     name = "New Game",
                     itemType = config.ItemType.BUTTON,
@@ -90,6 +117,29 @@ def addStandardUIItems(menuBarInstance: "MenuBar") -> None:
             ],
             connector = lambda: config.ReturnType.NORMAL))
 
+    # Game Bar
+
+    # Options
+    gameBarInstance.addMenuItem(
+        item = config.MenuItem(
+            name = "Options",
+            itemType = config.ItemType.BUTTON,
+            children = None,
+            connector = ConnectorFunctions.toggleGameBar,
+            paddedRight = False))
+
+    # Exit
+    gameBarInstance.addMenuItem(
+        item = config.MenuItem(
+            name = "Exit", 
+            itemType = config.ItemType.BUTTON, 
+            children = None, 
+            connector = ConnectorFunctions.exitGame,
+            paddedRight = True))
+    
+    # Clock
+    gameBarInstance.doClockRendering = True
+
 
 class MenuBar():
     def __init__(self)  -> None:
@@ -100,7 +150,9 @@ class MenuBar():
         self.menuItems: list[config.MenuItem] = []
         self.fontRegular: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_REGULAR), size = 24)
         self.fontMedium: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_MEDIUM), size = 24)
+        self.fontBold: pygame.font.Font = pygame.font.Font(filename = str(config.FONT_BOLD), size = 24)
         self.outlineWidth: int = 2
+        self.doClockRendering: bool = False
 
         # Padding
         self.paddingX: int = 16
@@ -133,6 +185,61 @@ class MenuBar():
     def runConnectorFunction(self, item: config.MenuItem) -> config.ReturnType:
         logger.info(msg = f"UI: Running connector function {item.connector.__name__}")
         return item.connector()
+
+    def renderClock(self, screen: pygame.Surface, sideToMove: config.PieceColour, clockInstance: "clockHandling.Clock") -> None:
+        whiteTime: str
+        blackTime: str
+        whiteTime, blackTime = clockInstance.getFormattedTimeForPlayers()
+        segments: list[pygame.Surface] = []
+        fontToUseForWhite: pygame.font.Font = self.fontBold if sideToMove == config.PieceColour.WHITE else self.fontMedium
+        fontColourForWhite: tuple[int, int, int, int] = config.UIColours.TEXT_PRIMARY.value if sideToMove == config.PieceColour.WHITE else config.UIColours.TEXT_SECONDARY.value
+        fontColourForBlack: tuple[int, int, int, int] = config.UIColours.TEXT_PRIMARY.value if sideToMove == config.PieceColour.BLACK else config.UIColours.TEXT_SECONDARY.value
+        fontToUseForBlack: pygame.font.Font = self.fontBold if sideToMove == config.PieceColour.BLACK else self.fontMedium
+
+        if (not clockInstance.clockRunning and boardInstance.hasFirstMoveHappened) or boardInstance.gameState.gameOver:
+            fontColourForWhite = config.UIColours.TEXT_DISABLED.value
+            fontColourForBlack = config.UIColours.TEXT_DISABLED.value
+
+        whiteTimeText: pygame.Surface = fontToUseForWhite.render(
+            text = whiteTime,
+            antialias = True,
+            color = fontColourForWhite
+        )
+        segments.append(whiteTimeText)
+
+        separatorText: pygame.Surface = self.fontRegular.render(
+            text = " | ",
+            antialias = True,
+            color = config.UIColours.TEXT_PRIMARY.value
+        )
+        segments.append(separatorText)
+
+        blackTimeText: pygame.Surface = fontToUseForBlack.render(
+            text = blackTime,
+            antialias = True,
+            color = fontColourForBlack
+        )
+        segments.append(blackTimeText)
+
+        suffixText: pygame.Surface = self.fontRegular.render(
+            text = f" · {sideToMove.name.capitalize()}'s turn",
+            antialias = True,
+            color = config.UIColours.TEXT_PRIMARY.value
+        )
+        segments.append(suffixText)
+
+        totalWidth: int = 0
+        for segment in segments:
+            totalWidth += segment.get_width()
+
+        XOffset: int = (self.width - totalWidth) // 2
+        centerY: int = self.height // 2
+
+        for segment in segments:
+            rect = segment.get_rect(midleft = (XOffset, centerY))
+            _ = screen.blit(source = segment, dest = rect)
+            XOffset += segment.get_width()
+
 
     def drawMenuBar(self, screen: pygame.Surface) -> None:
         if self.hidden:
@@ -265,6 +372,9 @@ class MenuBar():
                         width = self.dropdownOutlineWidth
                     )
 
+        if self.doClockRendering:
+            self.renderClock(screen = screen, sideToMove = boardInstance.SideToMove, clockInstance = clockInstance)
+
 class ConnectorFunctions():
     @staticmethod
     def exitGame() -> config.ReturnType:
@@ -279,6 +389,13 @@ class ConnectorFunctions():
 
     @staticmethod
     def newGame() -> config.ReturnType:
+        clockInstance.resetClock()
+        for menuItem in menuBarInstance.menuItems:
+            if menuItem.children:
+                for child in menuItem.children:
+                    if child.name == "Pause Game":
+                        child.toggled = False
+                        break
         return boardInstance.resetBoard()
 
     @staticmethod
@@ -295,3 +412,19 @@ class ConnectorFunctions():
     def undoMove() -> config.ReturnType:
         _ = boardInstance.undoMove()
         return _
+
+    @staticmethod
+    def toggleClock() -> config.ReturnType:
+        clockInstance.toggleClock()
+        return config.ReturnType.NORMAL    
+
+    # Game bar
+    @staticmethod
+    def toggleGameBar() -> config.ReturnType:
+        if gameBarInstance.hidden:
+            gameBarInstance.hidden = False
+            menuBarInstance.hidden = True
+        else:
+            gameBarInstance.hidden = True
+            menuBarInstance.hidden = False
+        return config.ReturnType.NORMAL
