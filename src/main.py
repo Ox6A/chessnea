@@ -152,6 +152,7 @@ def main() -> None:
 							board.selectedSquare = (-1, -1)
 							board.selectedSquareLegalMoves = []
 							valid = boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
+							_ = clockInstance.applyIncrement(sideToMove = board.SideToMove)
 							if valid and board.pendingPromotion is None:
 								board.syncBoardFlipStateToSideToMove()
 							board.piecePickedUp = (-1, -1)
@@ -167,6 +168,7 @@ def main() -> None:
 								legalMoveTargets.append(moveTarget.toSquare)
 							if targetSquare in legalMoveTargets:
 								valid = boardHandling.processMove(board = board, fromSquare = board.selectedSquare, toSquare = targetSquare)
+								_ = clockInstance.applyIncrement(sideToMove = board.SideToMove)
 								board.selectedSquare = (-1, -1)
 								board.selectedSquareLegalMoves = []
 							if valid and board.pendingPromotion is None:

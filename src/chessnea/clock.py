@@ -44,18 +44,30 @@ class Clock():
             currentTime: float = time.monotonic()
             elapsedTime: float = currentTime - self.lastUpdateTime
             if sideToMove == config.PieceColour.WHITE:
-                timeToApply = (self.whiteTimeRemaining + self.increment) - elapsedTime
+                timeToApply = self.whiteTimeRemaining - elapsedTime
                 if timeToApply <= 0:
                     self.whiteTimeRemaining = 0
                     self.clockRunning = False
                     return True
                 self.whiteTimeRemaining = timeToApply
             else:
-                timeToApply = (self.blackTimeRemaining + self.increment) - elapsedTime
+                timeToApply = self.blackTimeRemaining - elapsedTime
                 if timeToApply <= 0:
                     self.blackTimeRemaining = 0
                     self.clockRunning = False
                     return True
                 self.blackTimeRemaining = timeToApply
             self.lastUpdateTime = currentTime
+        return False
+    
+    def applyIncrement(self, sideToMove: config.PieceColour) -> bool:
+        if self.clockRunning:
+            if sideToMove == config.PieceColour.WHITE:
+                self.blackTimeRemaining += self.increment
+                self.lastUpdateTime = time.monotonic()
+                return True
+            else:
+                self.whiteTimeRemaining += self.increment
+                self.lastUpdateTime = time.monotonic()
+                return True
         return False

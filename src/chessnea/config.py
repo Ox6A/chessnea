@@ -15,7 +15,7 @@ FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
 FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_SQUARE_CHARACTERS
 DEFAULT_STARTING_TIME: int = 600
-DEFAULT_STARTING_INCREMENT: int = 0
+DEFAULT_STARTING_INCREMENT: int = 5
 
 def getRelativePathToAssets(assetsDir: str) -> Path:
 	basePath = getattr(sys, "_MEIPASS", None)
@@ -40,7 +40,7 @@ FONT_BOLD: Path = getFontPath(fontName = f"{FONT_FAMILY}-Bold.ttf", dir = FONT_D
 FONT_MEDIUM: Path = getFontPath(fontName = f"{FONT_FAMILY}-Medium.ttf", dir = FONT_DIRECTORY)
 
 class WindowDefaults(Enum):
-	FPS = 60
+	FPS = 120
 	TOP_BAR_HEIGHT = 50
 	BOARD_WIDTH = 800
 	BOARD_HEIGHT = 800
