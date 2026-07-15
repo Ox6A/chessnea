@@ -17,9 +17,10 @@ class Clock():
         self.clockRunning = False
         self.lastUpdateTime = time.monotonic()
 
-    def toggleClock(self) -> None:
+    def toggleClock(self) -> bool:
         self.clockRunning = not self.clockRunning
         self.lastUpdateTime = time.monotonic()
+        return self.clockRunning
 
     def setClockRunning(self, running: bool) -> None:
         self.clockRunning = running
