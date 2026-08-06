@@ -1,10 +1,11 @@
-from dataclasses import dataclass, field
-import pygame
-from pathlib import Path
-import sys
-from enum import IntEnum, Enum
-import typing
 import logging
+import sys
+import typing
+from dataclasses import dataclass, field
+from enum import Enum, IntEnum
+from pathlib import Path
+
+import pygame
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -103,12 +104,12 @@ class ReturnType(Enum):
 	QUIT_GAME = 3
 
 @dataclass
-class MoveHighlighting():
+class MoveHighlighting:
 	currentMove: tuple[int, int] = (-1, -1)
 	previousMove: tuple[int, int] = (-1, -1)
 
 @dataclass
-class CheckState():
+class CheckState:
 	inCheck: bool = False
 	square: tuple[int, int] = (-1, -1)
 	colourInCheck: PieceColour | None = None
@@ -122,7 +123,7 @@ class GameOverReason(IntEnum): # LUT for integer equivalence of possible game ov
 	TIMEOUT = 5
 
 @dataclass
-class GameState():
+class GameState:
 	gameOver: bool = False
 	winner: PieceColour | None = None
 	reason: GameOverReason | None = None
@@ -141,7 +142,7 @@ class MoveHistoryData:
 	gameState: GameState = field(default_factory = GameState)
 
 @dataclass(frozen = True)
-class PieceToFEN(): # LUT for character equivalence of chess pieces when exporting FEN strings
+class PieceToFEN: # LUT for character equivalence of chess pieces when exporting FEN strings
 	WHITE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.PAWN: "P",
 		Piece.KNIGHT: "N",
@@ -158,7 +159,7 @@ class PieceToFEN(): # LUT for character equivalence of chess pieces when exporti
 		Piece.KING: "k"}
 
 @dataclass(frozen = True)
-class PieceToPGN():
+class PieceToPGN:
 	PIECE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.PAWN: "",
 		Piece.KNIGHT: "N",
@@ -169,7 +170,7 @@ class PieceToPGN():
 	}
 
 @dataclass(frozen = True)
-class InternalToAlgebraic():
+class InternalToAlgebraic:
 	RANK: typing.ClassVar[dict[int, str]] = {
 		0: "8",
 		1: "7",
@@ -262,7 +263,7 @@ class ItemType(IntEnum):
 	TOGGLE = 3
 
 @dataclass
-class MenuItem():
+class MenuItem:
 	name: str
 	itemType: ItemType
 	connector: typing.Callable[[], ReturnType]

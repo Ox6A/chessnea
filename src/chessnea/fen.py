@@ -1,8 +1,10 @@
-from __future__ import annotations # Fix import cycling
-from typing import Protocol
+from __future__ import annotations
 
 import logging
-import chessnea.config as config
+from typing import Protocol
+
+from chessnea import config
+
 
 class BoardHandlingProtocolForFEN(Protocol):                                                                                                                                                                                      
 	Board: list[list[tuple[config.Piece, config.PieceColour]]]                                                                                                                                                    
@@ -174,20 +176,16 @@ def importFEN(board: BoardHandlingProtocolForFEN, fen: str) -> None:
 				fileIndex += 1
 	board.Board = emptyBoard
 	# Check if the imported position has legal castling positions
-	if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights:
-		if board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][7] != (config.Piece.ROOK, config.PieceColour.WHITE):
+	if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights and (board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][7] != (config.Piece.ROOK, config.PieceColour.WHITE)):
 			logger.error(msg = "FEN: Castling rights for white kingside castling given in FEN, but no king and/or rook in the correct position")
 			board.CastlingRights.remove(config.CastlingRights.WHITE_KINGSIDE)
-	if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights:
-		if board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][0] != (config.Piece.ROOK, config.PieceColour.WHITE):
+	if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights and (board.Board[7][4] != (config.Piece.KING, config.PieceColour.WHITE) or board.Board[7][0] != (config.Piece.ROOK, config.PieceColour.WHITE)):
 			logger.error(msg = "FEN: Castling rights for white queenside castling given in FEN, but no king and/or rook in the correct position")
 			board.CastlingRights.remove(config.CastlingRights.WHITE_QUEENSIDE)
-	if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights:
-		if board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][7] != (config.Piece.ROOK, config.PieceColour.BLACK):
+	if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights and (board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][7] != (config.Piece.ROOK, config.PieceColour.BLACK)):
 			logger.error(msg = "FEN: Castling rights for black kingside castling given in FEN, but no king and/or rook in the correct position")
 			board.CastlingRights.remove(config.CastlingRights.BLACK_KINGSIDE)
-	if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights:
-		if board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][0] != (config.Piece.ROOK, config.PieceColour.BLACK):
+	if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights and (board.Board[0][4] != (config.Piece.KING, config.PieceColour.BLACK) or board.Board[0][0] != (config.Piece.ROOK, config.PieceColour.BLACK)):
 			logger.error(msg = "FEN: Castling rights for black queenside castling given in FEN, but no king and/or rook in the correct position")
 			board.CastlingRights.remove(config.CastlingRights.BLACK_QUEENSIDE)
 

@@ -1,13 +1,13 @@
-from os import environ
+#!/usr/bin/python
 import logging
 import typing
+from os import environ
+
 import pygame
 
-import chessnea.config as config
 import chessnea.board as boardHandling
-import chessnea.render as render
-import chessnea.ui as ui
 import chessnea.clock as clockHandling
+from chessnea import config, render, ui
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -200,8 +200,7 @@ def main() -> None:
 						board.piecePickedUpLegalMoves = []
 
 
-		if not board.gameState.gameOver:
-			if clockInstance.updateClock(sideToMove = board.SideToMove):
+		if not board.gameState.gameOver and clockInstance.updateClock(sideToMove = board.SideToMove):
 				board.gameState.gameOver = True                                                                                 
 				board.gameState.winner = board.findOpposingColour(colour = board.SideToMove)                                    
 				board.gameState.reason = config.GameOverReason.TIMEOUT                                                          
