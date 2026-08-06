@@ -1,19 +1,21 @@
 from __future__ import annotations
-import pygame
+
 import logging
 import typing
 
+import pygame
+
 import chessnea.board as boardHandling
+
 if typing.TYPE_CHECKING:
-	import chessnea.render as render
-import chessnea.config as config
-import chessnea.pgn as pgn
+	from chessnea import render
 import chessnea.clock as clockHandling
+from chessnea import config, pgn
 
 boardInstance: boardHandling.BoardHandling
 renderInstance: render.Rendering
-menuBarInstance: "MenuBar"
-gameBarInstance: "MenuBar"
+menuBarInstance: MenuBar
+gameBarInstance: MenuBar
 clockInstance: clockHandling.Clock
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -26,11 +28,11 @@ def loadRenderInstanceInUI(render: render.Rendering) -> None:
 	global renderInstance
 	renderInstance = render
 
-def loadMenuBar(menuBar: "MenuBar") -> None:
+def loadMenuBar(menuBar: MenuBar) -> None:
 	global menuBarInstance
 	menuBarInstance = menuBar
 
-def loadGameBar(gameBar: "MenuBar") -> None:
+def loadGameBar(gameBar: MenuBar) -> None:
 	global gameBarInstance
 	gameBarInstance = gameBar
 
@@ -39,7 +41,7 @@ def loadClock(clock: clockHandling.Clock) -> clockHandling.Clock:
 	clockInstance = clock
 	return clockInstance
 
-def addStandardUIItems(menuBarInstance: "MenuBar", gameBarInstance: "MenuBar") -> None:
+def addStandardUIItems(menuBarInstance: MenuBar, gameBarInstance: MenuBar) -> None:
 	# Menu Bar
 	menuBarInstance.hidden = True
 	# Back to Game Bar
@@ -134,7 +136,7 @@ def addStandardUIItems(menuBarInstance: "MenuBar", gameBarInstance: "MenuBar") -
 	# Clock
 	gameBarInstance.doClockRendering = True
 
-class MenuBar():
+class MenuBar:
 	def __init__(self)  -> None:
 		self.hidden: bool = False
 		self.height: int = 50
@@ -179,7 +181,7 @@ class MenuBar():
 		logger.info(msg = f"UI: Running connector function {item.connector.__name__}")
 		return item.connector()
 
-	def renderClock(self, screen: pygame.Surface, sideToMove: config.PieceColour, clockInstance: "clockHandling.Clock") -> None:
+	def renderClock(self, screen: pygame.Surface, sideToMove: config.PieceColour, clockInstance: clockHandling.Clock) -> None:
 		whiteTime: str
 		blackTime: str
 		whiteTime, blackTime = clockInstance.getFormattedTimeForPlayers()
@@ -319,8 +321,7 @@ class MenuBar():
 				dropdownOutlineOffset: int = self.dropdownOutlineWidth
 				for childItem in item.children: # calculate largest dropdown width
 					dropdownWidth: int = max(itemRect.width, self.fontRegular.size(childItem.name)[0] + (self.paddingX * 2))
-					if maximumDropdownBoxWidth <= dropdownWidth:
-						maximumDropdownBoxWidth = dropdownWidth
+					maximumDropdownBoxWidth = max(dropdownWidth, maximumDropdownBoxWidth)
 
 				for childItem in item.children:
 					childItemRect = pygame.Rect(
@@ -367,8 +368,20 @@ class MenuBar():
 
 		if self.doClockRendering:
 			self.renderClock(screen = screen, sideToMove = boardInstance.SideToMove, clockInstance = clockInstance)
+   
+class GenericMenu:
+    def __init__(self) -> None:
+        self.hidden: bool = True
+        self.allowEasyExit: bool = True
+        self.pauseGameWhenOpen: bool = True
+        
+class FENMenu(GenericMenu):
+    def __init__(self) -> None:
+        self.rects: list[pygame.Rect] = []
+        super().__init__()
 
-class ConnectorFunctions():
+
+class ConnectorFunctions:
 	@staticmethod
 	def exitGame() -> config.ReturnType:
 		return config.ReturnType.QUIT_GAME

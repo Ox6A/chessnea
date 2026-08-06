@@ -1,13 +1,14 @@
-import math
 import logging
+import math
+
 import pygame
 
-import chessnea.config as config
 import chessnea.board as boardHandling
+from chessnea import config
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
-class Rendering():
+class Rendering:
 	# Handle all board rendering functions
 	def __init__(self) -> None:
 		self.font: pygame.font.Font = pygame.font.Font(filename = None, size = 18) # Initialise the font used for debugging methods at object init
@@ -177,17 +178,17 @@ class Rendering():
 		width, height = size[0], size[1]
 		for y in range(height):
 			for x in range(width):
-				distanceToCentre: float = math.sqrt(((x - width / 2) ** 2 + (y - height / 2) ** 2))
+				distanceToCentre: float = math.sqrt((x - width / 2) ** 2 + (y - height / 2) ** 2)
 				if distanceToCentre > min(width, height) / 2:
 					gradientSurface.set_at((x, y), (0, 0, 0, 0))
 					continue
-				amount: float = min(distanceToCentre / ((min(width, height) / 2)), 1)
+				amount: float = min(distanceToCentre / (min(width, height) / 2), 1)
 				red: int = int(centreColour[0] * (1 - amount) + edgeColour[0] * amount)
 				green: int = int(centreColour[1] * (1 - amount) + edgeColour[1] * amount)
 				blue: int = int(centreColour[2] * (1 - amount) + edgeColour[2] * amount)
 				alpha: int = int(centreColour[3] * (1 - amount) + edgeColour[3] * amount)
 				if distanceToCentre > (min(width, height) / 2) - 3:
-					alpha = int(alpha * ((((min(width, height) / 2) - distanceToCentre) / 3)))
+					alpha = int(alpha * (((min(width, height) / 2) - distanceToCentre) / 3))
 				gradientSurface.set_at((x, y), (red, green, blue, alpha))
 		return gradientSurface
 

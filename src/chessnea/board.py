@@ -1,14 +1,13 @@
-from typing import Literal
 import logging
+from typing import Literal
+
 import pygame
 
-import chessnea.assets as assets
-import chessnea.config as config
-import chessnea.fen as fen
+from chessnea import assets, config, fen
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
-class BoardHandling():
+class BoardHandling:
 	def __init__(self)  -> None:
 		self.Board: list[list[tuple[config.Piece, config.PieceColour]]] = [
 				[
@@ -134,7 +133,7 @@ class BoardHandling():
 		else:
 			return config.PieceColour.WHITE
 
-class PseudoLegalMovesForPieceType():
+class PseudoLegalMovesForPieceType:
 	@staticmethod
 	def pawn(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
 		validMoves: list[config.MoveData] = []
@@ -169,12 +168,10 @@ class PseudoLegalMovesForPieceType():
 						validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.CAPTURE))
 				if (targetSingleRow, targetDiagonalCol) == board.EnPassantTargettableSquare and targetPiece == config.Piece.EMPTY: # En passant capture
 					if board.SideToMove == config.PieceColour.WHITE:
-						if board.Board[targetSingleRow + 1][targetDiagonalCol][0] == config.Piece.PAWN:
-							if board.Board[targetSingleRow + 1][targetDiagonalCol][1] == config.PieceColour.BLACK:
+						if board.Board[targetSingleRow + 1][targetDiagonalCol][0] == config.Piece.PAWN and board.Board[targetSingleRow + 1][targetDiagonalCol][1] == config.PieceColour.BLACK:
 								validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.EN_PASSANT))
 					else:
-						if board.Board[targetSingleRow - 1][targetDiagonalCol][0] == config.Piece.PAWN:
-							if board.Board[targetSingleRow - 1][targetDiagonalCol][1] == config.PieceColour.WHITE:
+						if board.Board[targetSingleRow - 1][targetDiagonalCol][0] == config.Piece.PAWN and board.Board[targetSingleRow - 1][targetDiagonalCol][1] == config.PieceColour.WHITE:
 								validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (targetSingleRow, targetDiagonalCol), moveType = config.MoveType.EN_PASSANT))
 		return validMoves
 
@@ -288,19 +285,15 @@ class PseudoLegalMovesForPieceType():
 
 		# Castling moves
 		if currentColour == config.PieceColour.WHITE and row == 7 and col == 4:
-			if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights and board.Board[7][7] == (config.Piece.ROOK, config.PieceColour.WHITE):
-				if board.Board[7][5][0] == config.Piece.EMPTY and board.Board[7][6][0] == config.Piece.EMPTY:
-					validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 6), moveType = config.MoveType.CASTLING))
-			if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights and board.Board[7][0] == (config.Piece.ROOK, config.PieceColour.WHITE):
-				if board.Board[7][1][0] == config.Piece.EMPTY and board.Board[7][2][0] == config.Piece.EMPTY and board.Board[7][3][0] == config.Piece.EMPTY:
-					validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 2), moveType = config.MoveType.CASTLING))
+			if config.CastlingRights.WHITE_KINGSIDE in board.CastlingRights and board.Board[7][7] == (config.Piece.ROOK, config.PieceColour.WHITE) and board.Board[7][5][0] == config.Piece.EMPTY and board.Board[7][6][0] == config.Piece.EMPTY:
+				validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 6), moveType = config.MoveType.CASTLING))
+			if config.CastlingRights.WHITE_QUEENSIDE in board.CastlingRights and board.Board[7][0] == (config.Piece.ROOK, config.PieceColour.WHITE) and board.Board[7][1][0] == config.Piece.EMPTY and board.Board[7][2][0] == config.Piece.EMPTY and board.Board[7][3][0] == config.Piece.EMPTY:
+				validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (7, 2), moveType = config.MoveType.CASTLING))
 		elif currentColour == config.PieceColour.BLACK and row == 0 and col == 4:
-			if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights and board.Board[0][7] == (config.Piece.ROOK, config.PieceColour.BLACK):
-				if board.Board[0][5][0] == config.Piece.EMPTY and board.Board[0][6][0] == config.Piece.EMPTY:
-					validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 6), moveType = config.MoveType.CASTLING))
-			if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights and board.Board[0][0] == (config.Piece.ROOK, config.PieceColour.BLACK):
-				if board.Board[0][1][0] == config.Piece.EMPTY and board.Board[0][2][0] == config.Piece.EMPTY and board.Board[0][3][0] == config.Piece.EMPTY:
-					validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 2), moveType = config.MoveType.CASTLING))
+			if config.CastlingRights.BLACK_KINGSIDE in board.CastlingRights and board.Board[0][7] == (config.Piece.ROOK, config.PieceColour.BLACK) and board.Board[0][5][0] == config.Piece.EMPTY and board.Board[0][6][0] == config.Piece.EMPTY:
+				validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 6), moveType = config.MoveType.CASTLING))
+			if config.CastlingRights.BLACK_QUEENSIDE in board.CastlingRights and board.Board[0][0] == (config.Piece.ROOK, config.PieceColour.BLACK) and board.Board[0][1][0] == config.Piece.EMPTY and board.Board[0][2][0] == config.Piece.EMPTY and board.Board[0][3][0] == config.Piece.EMPTY:
+				validMoves.append(config.MoveData(fromSquare = (row, col), toSquare = (0, 2), moveType = config.MoveType.CASTLING))
 
 		return validMoves
 
@@ -340,7 +333,7 @@ def findKing(board: BoardHandling, sourceColour: config.PieceColour) -> tuple[in
 				return kingPosition
 	return kingPosition
 
-class squareAttackChecking():
+class squareAttackChecking:
 	@staticmethod
 	def pawn(board: BoardHandling, targetSquare: tuple[int, int], attackingColour: config.PieceColour) -> bool:
 		targetRow, targetCol = targetSquare
@@ -350,8 +343,7 @@ class squareAttackChecking():
 		else:
 			direction = -1
 		for potentialPieceDiagonalCol in [targetCol - 1, targetCol + 1]:
-			if 0 <= potentialPieceDiagonalCol <= 7 and 0 <= targetRow + direction <= 7:
-				if board.Board[targetRow + direction][potentialPieceDiagonalCol][0] == config.Piece.PAWN and board.Board[targetRow + direction][potentialPieceDiagonalCol][1] == attackingColour:
+			if 0 <= potentialPieceDiagonalCol <= 7 and 0 <= targetRow + direction <= 7 and (board.Board[targetRow + direction][potentialPieceDiagonalCol][0] == config.Piece.PAWN and board.Board[targetRow + direction][potentialPieceDiagonalCol][1] == attackingColour):
 					return True
 		return False
 
@@ -375,8 +367,7 @@ class squareAttackChecking():
 		directions: list[list[int]] = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]] # Up 2 Left 1, Up 2 Right 1, Up 1 Left 2, Up 1 Right 2, Down 1 Left 2, Down 1 Right 2, Down 2 Left 1, Down 2 Right 1
 		for i in directions:
 			targetRowDirection, targetColDirection = targetRow + i[0], targetCol + i[1]
-			if 0 <= targetRowDirection <= 7 and 0 <= targetColDirection <= 7:
-				if board.Board[targetRowDirection][targetColDirection][0] == config.Piece.KNIGHT and board.Board[targetRowDirection][targetColDirection][1] == attackingColour:
+			if 0 <= targetRowDirection <= 7 and 0 <= targetColDirection <= 7 and (board.Board[targetRowDirection][targetColDirection][0] == config.Piece.KNIGHT and board.Board[targetRowDirection][targetColDirection][1] == attackingColour):
 					return True
 		return False
 
@@ -414,8 +405,7 @@ class squareAttackChecking():
 		directions: list[list[int]] = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]] # All 8 possible king move directions
 		for i in directions:
 			targetRowDirection, targetColDirection = targetRow + i[0], targetCol + i[1]
-			if 0 <= targetRowDirection <= 7 and 0 <= targetColDirection <= 7:
-				if board.Board[targetRowDirection][targetColDirection][0] == config.Piece.KING and board.Board[targetRowDirection][targetColDirection][1] == attackingColour:
+			if 0 <= targetRowDirection <= 7 and 0 <= targetColDirection <= 7 and (board.Board[targetRowDirection][targetColDirection][0] == config.Piece.KING and board.Board[targetRowDirection][targetColDirection][1] == attackingColour):
 					return True
 		return False
 
@@ -431,9 +421,7 @@ def isSquareAttacked(board: BoardHandling, targetSquare: tuple[int, int], attack
 		return True
 	if squareAttackChecking.queen(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
 		return True
-	if squareAttackChecking.king(board = board, targetSquare = targetSquare, attackingColour = attackingColour):
-		return True
-	return False
+	return bool(squareAttackChecking.king(board = board, targetSquare = targetSquare, attackingColour = attackingColour))
 
 def getLegalMovesForPiece(board: BoardHandling, row: int, col: int) -> list[config.MoveData]:
 	enemyColour: config.PieceColour
@@ -671,11 +659,9 @@ def checkForInsufficientMaterial(board: BoardHandling) -> bool:
 		return True
 
 	# king and bishop/ knight vs king
-	if (len(whitePieces)) == 2 and len(blackPieces) == 1:
-		if config.Piece.BISHOP in whitePieces or config.Piece.KNIGHT in whitePieces:
+	if (len(whitePieces)) == 2 and len(blackPieces) == 1 and (config.Piece.BISHOP in whitePieces or config.Piece.KNIGHT in whitePieces):
 			return True
-	if (len(blackPieces)) == 2 and len(whitePieces) == 1:
-		if config.Piece.BISHOP in blackPieces or config.Piece.KNIGHT in blackPieces:
+	if (len(blackPieces)) == 2 and len(whitePieces) == 1 and (config.Piece.BISHOP in blackPieces or config.Piece.KNIGHT in blackPieces):
 			return True
 	
 	# king and bishop vs king and bishop (same colour bishops)

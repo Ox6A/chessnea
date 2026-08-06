@@ -1,9 +1,10 @@
-import time
 import math
+import time
 
-import chessnea.config as config
+from chessnea import config
 
-class Clock():
+
+class Clock:
     def __init__(self, startingTime: int = config.DEFAULT_STARTING_TIME, startingIncrement: int = config.DEFAULT_STARTING_INCREMENT) -> None:
         self.whiteTimeRemaining: float = float(startingTime)
         self.blackTimeRemaining: float = float(startingTime)

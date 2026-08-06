@@ -1,7 +1,8 @@
 import logging
+
 import pygame
 
-import chessnea.config as config
+from chessnea import config
 
 logger: logging.Logger = logging.getLogger(__name__)
 
