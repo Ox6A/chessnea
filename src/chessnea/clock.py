@@ -64,11 +64,11 @@ class Clock:
     def applyIncrement(self, sideToMove: config.PieceColour) -> bool:
         if self.clockRunning:
             if sideToMove == config.PieceColour.WHITE:
-                self.blackTimeRemaining += self.increment
                 self.lastUpdateTime = time.monotonic()
+                self.blackTimeRemaining += self.increment
                 return True
             else:
-                self.whiteTimeRemaining += self.increment
                 self.lastUpdateTime = time.monotonic()
+                self.whiteTimeRemaining += self.increment
                 return True
         return False

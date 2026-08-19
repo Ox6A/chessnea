@@ -152,9 +152,10 @@ def main() -> None:
 							board.selectedSquare = (-1, -1)
 							board.selectedSquareLegalMoves = []
 							valid = boardHandling.processMove(board = board, fromSquare = board.piecePickedUp, toSquare = targetSquare)
-							_ = clockInstance.applyIncrement(sideToMove = board.SideToMove)
-							if valid and board.pendingPromotion is None:
-								board.syncBoardFlipStateToSideToMove()
+							if valid:
+								_ = clockInstance.applyIncrement(sideToMove = board.SideToMove)
+								if board.pendingPromotion is None:
+									board.syncBoardFlipStateToSideToMove()
 							board.piecePickedUp = (-1, -1)
 							board.piecePickedUpLegalMoves = []
 							if valid and not board.hasFirstMoveHappened:
