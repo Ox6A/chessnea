@@ -1,9 +1,10 @@
-import time
 import math
+import time
 
-import chessnea.config as config
+from chessnea import config
 
-class Clock():
+
+class Clock:
     def __init__(self, startingTime: int = config.DEFAULT_STARTING_TIME, startingIncrement: int = config.DEFAULT_STARTING_INCREMENT) -> None:
         self.whiteTimeRemaining: float = float(startingTime)
         self.blackTimeRemaining: float = float(startingTime)
@@ -17,9 +18,10 @@ class Clock():
         self.clockRunning = False
         self.lastUpdateTime = time.monotonic()
 
-    def toggleClock(self) -> None:
+    def toggleClock(self) -> bool:
         self.clockRunning = not self.clockRunning
         self.lastUpdateTime = time.monotonic()
+        return self.clockRunning
 
     def setClockRunning(self, running: bool) -> None:
         self.clockRunning = running
@@ -43,18 +45,30 @@ class Clock():
             currentTime: float = time.monotonic()
             elapsedTime: float = currentTime - self.lastUpdateTime
             if sideToMove == config.PieceColour.WHITE:
-                timeToApply = (self.whiteTimeRemaining + self.increment) - elapsedTime
+                timeToApply = self.whiteTimeRemaining - elapsedTime
                 if timeToApply <= 0:
                     self.whiteTimeRemaining = 0
                     self.clockRunning = False
                     return True
                 self.whiteTimeRemaining = timeToApply
             else:
-                timeToApply = (self.blackTimeRemaining + self.increment) - elapsedTime
+                timeToApply = self.blackTimeRemaining - elapsedTime
                 if timeToApply <= 0:
                     self.blackTimeRemaining = 0
                     self.clockRunning = False
                     return True
                 self.blackTimeRemaining = timeToApply
             self.lastUpdateTime = currentTime
+        return False
+    
+    def applyIncrement(self, sideToMove: config.PieceColour) -> bool:
+        if self.clockRunning:
+            if sideToMove == config.PieceColour.WHITE:
+                self.lastUpdateTime = time.monotonic()
+                self.blackTimeRemaining += self.increment
+                return True
+            else:
+                self.lastUpdateTime = time.monotonic()
+                self.whiteTimeRemaining += self.increment
+                return True
         return False
