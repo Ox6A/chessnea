@@ -67,7 +67,7 @@ class BoardViewport:
 
     def renderBoard(self, screen: pygame.Surface, boardPosition: position.Position) -> None:
         self.drawBoardBackgroundSurface(screen = screen)
-        for row, rank in enumerate(boardPosition.Board):
+        for row, rank in enumerate(boardPosition.board):
             for col, (piece, colour) in enumerate(rank):
                 if piece == types.Piece.EMPTY:
                     continue

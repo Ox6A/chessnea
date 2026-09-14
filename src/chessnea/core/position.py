@@ -5,9 +5,9 @@ from chessnea.core import types
 
 @dataclass(frozen = True)
 class Position:
-    Board: tuple[tuple[tuple[types.Piece, types.PieceColour], ...], ...]
-    SideToMove: types.PieceColour
-    CastlingRights: frozenset[types.CastlingRights]  # Corresponds to types.CastlingRights LUT
-    EnPassantTargettableSquare: tuple[int, int]
-    FiftyMoveCounter: int
-    FullMoveCounter: int
+    board: tuple[tuple[tuple[types.Piece, types.PieceColour], ...], ...]
+    sideToMove: types.PieceColour
+    castlingRights: frozenset[types.CastlingRights]  # Corresponds to types.CastlingRights LUT
+    enPassantTargettableSquare: tuple[int, int]
+    fiftyMoveCounter: int
+    fullMoveCounter: int
