@@ -25,12 +25,7 @@ class SelectionState:
         self.piecePickedUp = (-1, -1)
 
 def scaleBoard(widthPx: int, heightPx: int) -> int:
-    currentWidth: int = int(widthPx)
-    currentHeight: int = int(heightPx)
-    resolutionPx: int = min(currentWidth, currentHeight)
-    availableScreenPx: int = int(resolutionPx * board.BOARD_TO_RESOLUTION_FACTOR)
-    board_px = availableScreenPx // 8 * 8 # round to square size
-    return max(board.MIN_BOARD_PX, board_px)
+    return int(min(widthPx, heightPx) * board.BOARD_TO_RESOLUTION_FACTOR)
 
 
 def checkPositiveIntFromArgument(text: str) -> int:
@@ -72,6 +67,8 @@ class App:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    print("Down")
             _ = self.screen.fill((255, 255, 255))
             _ = viewport.renderBoard(screen = self.screen, boardPosition = boardPosition)
             _ = clock.tick(FPS)

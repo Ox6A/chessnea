@@ -20,6 +20,8 @@ class Layout:
 
     @classmethod
     def fromBoardPx(cls, boardPx: int) -> "Layout":
+        boardPx = max(MIN_BOARD_PX, boardPx) # Enforce minimum board size
+        boardPx -= boardPx % 8 # Remove excess pixels after setting the 8 square division factor
         return cls(
             boardPx = boardPx,
             squarePx = boardPx // 8,
@@ -63,6 +65,16 @@ class BoardViewport:
         if 0 <= row < 8 and 0 <= col < 8:
             return (row, col)
         return None
+    
+    def getSquareRectAtGamePosition(self, square: tuple[int, int]) -> pygame.Rect:
+        row, col = square
+        size = self.layout.squarePx
+        return pygame.Rect(
+			col * size,
+			self.layout.topBarPx + (row * size),
+			size,
+			size
+		)
 
 
     def renderBoard(self, screen: pygame.Surface, boardPosition: position.Position) -> None:
@@ -72,5 +84,5 @@ class BoardViewport:
                 if piece == types.Piece.EMPTY:
                     continue
                 sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
-                offsetPx: int = (self.layout.squarePx - sprite.get_width()) // 2
-                _ = screen.blit(source = sprite, dest = (col * self.layout.squarePx + offsetPx, row * self.layout.squarePx + self.layout.topBarPx + offsetPx))
+                rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))
+                _ = screen.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
