@@ -2,6 +2,7 @@ import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
+Square: typing.TypeAlias = tuple[int, int]
 
 class Piece(IntEnum):
 	EMPTY = -1
