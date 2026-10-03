@@ -1,7 +1,6 @@
 import argparse
 import logging
 import sys
-from dataclasses import dataclass
 from os import environ
 
 import pygame
@@ -9,20 +8,11 @@ import pygame
 logger: logging.Logger = logging.getLogger(name = __name__)
 
 from chessnea import __version__
-from chessnea.core import fen, position, types
+from chessnea.core import fen, position
 from chessnea.ui import board
+from chessnea.ui.selection import SelectionState
 
 FPS: int = 60
-
-@dataclass
-class SelectionState:
-    piecePickedUp: types.Square = (-1, -1)
-
-    def setPickedUpPiece(self, row: int, col: int) -> None:
-        self.piecePickedUp = (row, col)
-
-    def clearPickedUpPiece(self) -> None:
-        self.piecePickedUp = (-1, -1)
 
 def scaleBoard(widthPx: int, heightPx: int) -> int:
     return int(min(widthPx, heightPx) * board.BOARD_TO_RESOLUTION_FACTOR)

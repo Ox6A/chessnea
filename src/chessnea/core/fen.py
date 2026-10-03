@@ -38,9 +38,9 @@ def importFENToPositionObject(fen: str) -> position.Position:
 	boardFENRanks: list[str] = boardFEN.split(sep = "/")
 	if len(boardFENRanks) != 8:
 		raise ValueError(f"FEN: Expected 8 ranks, got {len(boardFENRanks)} in {fen}")
-	parsedBoardList: list[list[tuple[types.Piece, types.PieceColour]]] = []
+	parsedBoardList: list[list[types.BoardSquare]] = []
 	for rankFEN in boardFENRanks:
-		parsedBoardRanks: list[tuple[types.Piece, types.PieceColour]] = []
+		parsedBoardRanks: list[types.BoardSquare] = []
 		for i in rankFEN:
 			if i.lower() in "pnbrqk":
 				if i.lower() == "k":
@@ -62,7 +62,7 @@ def importFENToPositionObject(fen: str) -> position.Position:
 	if boardKingCount != 2:
 		raise ValueError(f"FEN: Expected 2 kings, got {boardKingCount} in {fen}")
  
-	parsedBoard: tuple[tuple[tuple[types.Piece, types.PieceColour], ...], ...] = tuple(map(tuple, parsedBoardList))
+	parsedBoard: types.Board = tuple(map(tuple, parsedBoardList))
  
 	# side to move FEN
 	parsedSideToMove: types.PieceColour
@@ -92,9 +92,9 @@ def importFENToPositionObject(fen: str) -> position.Position:
 	parsedCastlingRights: frozenset[types.CastlingRights] = frozenset(unparsedCastlingRights)
  
 	# en passant target square FEN
-	parsedEnPassantTargetSquare: types.Square
+	parsedEnPassantTargetSquare: types.Square | None
 	if enPassantTargetSquareFEN == "-":
-		parsedEnPassantTargetSquare = (-1, -1)
+		parsedEnPassantTargetSquare = None
 	else:
 		if len(enPassantTargetSquareFEN) != 2:
 			raise ValueError(f"FEN: Expected valid en passant target square, got {enPassantTargetSquareFEN} in {fen}")
@@ -170,7 +170,7 @@ def exportPositionObjectToFEN(position: position.Position) -> str:
   
 	# encode en passant target square FEN
 	enPassantTargetSquareFEN: str
-	if position.enPassantTargettableSquare == (-1, -1):
+	if position.enPassantTargettableSquare is None:
 		enPassantTargetSquareFEN = "-"
 	else:
 		enPassantTargetSquareFEN = parseBoardCoordinatesToFENCoordinates(row = position.enPassantTargettableSquare[0], col = position.enPassantTargettableSquare[1])

@@ -2,6 +2,7 @@ import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
+# Board coordinates are (0, 0) at a8 and (7, 7) at h1
 Square: typing.TypeAlias = tuple[int, int]
 
 class Piece(IntEnum):
@@ -17,6 +18,9 @@ class PieceColour(IntEnum):
 	EMPTY = -1
 	WHITE = 0
 	BLACK = 1
+
+BoardSquare: typing.TypeAlias = tuple[Piece, PieceColour]
+Board: typing.TypeAlias = tuple[tuple[BoardSquare, ...], ...]
 
 class PieceToDisplayName:
 	PIECE: typing.ClassVar[dict[Piece, str]] = {
@@ -82,29 +86,9 @@ class FENToPiece:
 		"k": PieceColour.BLACK,
 	}
 
-class MoveType(IntEnum): # LUT for integer equivalence of possible chess move types
-	NORMAL = 0
-	CAPTURE = 1
-	EN_PASSANT = 2
-	CASTLING = 3
-	PROMOTION = 4
-
 # move to a simpler system to make UCI moves and board moves analagous
 @dataclass(frozen = True, slots = True)
 class Move:
 	fromSquare: Square
 	toSquare: Square
 	promotionPiece: Piece | None = None
-
-""" @dataclass(frozen = True)
-class MoveData:
-	fromSquare: Square
-	toSquare: Square
-	moveType: MoveType
-	promotionPiece: Piece | None = None
-
-@dataclass(frozen = True)
-class CheckState:
-	inCheck: bool = False
-	square: Square = (-1, -1)
-	colourInCheck: PieceColour | None = None """
