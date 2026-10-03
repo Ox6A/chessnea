@@ -9,14 +9,14 @@ import pygame
 logger: logging.Logger = logging.getLogger(name = __name__)
 
 from chessnea import __version__
-from chessnea.core import fen, position
+from chessnea.core import fen, position, types
 from chessnea.ui import board
 
 FPS: int = 60
 
 @dataclass
 class SelectionState:
-    piecePickedUp: tuple[int, int] = (-1, -1)
+    piecePickedUp: types.Square = (-1, -1)
 
     def setPickedUpPiece(self, row: int, col: int) -> None:
         self.piecePickedUp = (row, col)
