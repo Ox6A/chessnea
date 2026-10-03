@@ -57,7 +57,7 @@ class BoardViewport:
             logger.error(msg = f"Render: Sprite for {colour.name} {piece.name} not found in loaded sprites")
             raise ValueError(f"Render: Sprite for {colour.name} {piece.name} not found in loaded sprites") from e
     
-    def getSquareAt(self, mousePosition: tuple[int, int]) -> tuple[int, int] | None:
+    def getSquareAt(self, mousePosition: tuple[int, int]) -> types.Square | None:
         mouseX, mouseY = mousePosition
         mouseY -= self.layout.topBarPx
         row: int = mouseY // self.layout.squarePx
@@ -66,7 +66,7 @@ class BoardViewport:
             return (row, col)
         return None
     
-    def getSquareRectAtGamePosition(self, square: tuple[int, int]) -> pygame.Rect:
+    def getSquareRectAtGamePosition(self, square: types.Square) -> pygame.Rect:
         row, col = square
         size = self.layout.squarePx
         return pygame.Rect(

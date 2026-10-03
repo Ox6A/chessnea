@@ -92,19 +92,19 @@ class MoveType(IntEnum): # LUT for integer equivalence of possible chess move ty
 # move to a simpler system to make UCI moves and board moves analagous
 @dataclass(frozen = True, slots = True)
 class Move:
-	fromSquare: tuple[int, int]
-	toSquare: tuple[int, int]
+	fromSquare: Square
+	toSquare: Square
 	promotionPiece: Piece | None = None
 
 """ @dataclass(frozen = True)
 class MoveData:
-	fromSquare: tuple[int, int]
-	toSquare: tuple[int, int]
+	fromSquare: Square
+	toSquare: Square
 	moveType: MoveType
 	promotionPiece: Piece | None = None
 
 @dataclass(frozen = True)
 class CheckState:
 	inCheck: bool = False
-	square: tuple[int, int] = (-1, -1)
+	square: Square = (-1, -1)
 	colourInCheck: PieceColour | None = None """

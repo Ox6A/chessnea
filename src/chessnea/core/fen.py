@@ -9,7 +9,7 @@ FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_S
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> tuple[int, int]:
+def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> types.Square:
 	# Convert FEN coordinates into our internal representation
 	if file not in "abcdefgh" or rank not in "12345678":
 		raise ValueError(f"FEN: Invalid input FEN square field: {file}{rank}")
@@ -92,7 +92,7 @@ def importFENToPositionObject(fen: str) -> position.Position:
 	parsedCastlingRights: frozenset[types.CastlingRights] = frozenset(unparsedCastlingRights)
  
 	# en passant target square FEN
-	parsedEnPassantTargetSquare: tuple[int, int]
+	parsedEnPassantTargetSquare: types.Square
 	if enPassantTargetSquareFEN == "-":
 		parsedEnPassantTargetSquare = (-1, -1)
 	else:
