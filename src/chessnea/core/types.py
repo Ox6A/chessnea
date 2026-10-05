@@ -1,11 +1,14 @@
+"""Defines types used throughout the project."""
+
 import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
-# Board coordinates are (0, 0) at a8 and (7, 7) at h1
-Square: typing.TypeAlias = tuple[int, int]
+Square: typing.TypeAlias = tuple[int, int] 
+"""Represents a square on the chessboard as (row, col) with (0, 0) at a8 and (7, 7) at h1."""
 
 class Piece(IntEnum):
+	"""Represents the type of a chess piece."""
 	EMPTY = -1
 	PAWN = 0
 	KNIGHT = 1
@@ -15,14 +18,24 @@ class Piece(IntEnum):
 	KING = 5
 
 class PieceColour(IntEnum):
+	"""Represents the colour of a chess piece."""
 	EMPTY = -1
 	WHITE = 0
 	BLACK = 1
 
 BoardSquare: typing.TypeAlias = tuple[Piece, PieceColour]
+"""Represents a square on the chessboard as a (piece, colour) tuple."""
+
 Board: typing.TypeAlias = tuple[tuple[BoardSquare, ...], ...]
+"""Represents the entire chessboard as a 2-dimensional array of BoardSquares."""
 
 class PieceToDisplayName:
+	"""Converts a types.Piece type to a human-readable string.
+	
+	Usage:
+		PieceToDisplayName.PIECE[types.Piece] = returns str.
+		PieceToDisplayName.COLOUR[types.PieceColour] = returns str.
+	"""
 	PIECE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.EMPTY: "Empty",
 		Piece.PAWN: "Pawn",
@@ -38,12 +51,38 @@ class PieceToDisplayName:
 	}
 
 class CastlingRights(IntEnum):
+	"""Represents the castling rights for both players."""
 	WHITE_KINGSIDE = 0
 	WHITE_QUEENSIDE = 1
 	BLACK_KINGSIDE = 2
 	BLACK_QUEENSIDE = 3
 
+@dataclass(frozen = True)
+class Position:
+    """A snapshot of the board state.
+
+    Attributes:
+        board: tuple[tuple[BoardSquare, ...], ...] - Rows of (piece, colour) cells.
+        sideToMove: PieceColour - The player whose turn it is.
+        castlingRights: CastlingRights - Remaining castling rights.
+        enPassantTargettableSquare: Square | None - En passant target.
+        fiftyMoveCounter: int - Half-moves since the last pawn move or capture.
+        fullMoveCounter: int - Full-move number.
+    """
+
+    board: Board
+    sideToMove: PieceColour
+    castlingRights: frozenset[CastlingRights]  # Corresponds to types.CastlingRights LUT
+    enPassantTargettableSquare: Square | None
+    fiftyMoveCounter: int
+    fullMoveCounter: int
+
 class PieceToFEN:
+	""" Converts a types.Piece type to a FEN compatible string.
+	Usage:
+		PieceToFEN.WHITE[types.Piece] = returns FEN str.
+		PieceToFEN.BLACK[types.Piece] = returns FEN str.
+	"""
 	WHITE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.PAWN: "P",
 		Piece.KNIGHT: "N",
@@ -63,6 +102,11 @@ class PieceToFEN:
 	}
 
 class FENToPiece:
+	""" Converts a FEN compatible string to a types.Piece type.
+	Usage:
+		FENToPiece.PIECE[str] = returns types.Piece.
+		FENToPiece.COLOUR[str] = returns types.PieceColour.
+	"""
 	PIECE: typing.ClassVar[dict[str, Piece]] = {
 		"P": Piece.PAWN,
 		"N": Piece.KNIGHT,
@@ -89,6 +133,7 @@ class FENToPiece:
 # move to a simpler system to make UCI moves and board moves analagous
 @dataclass(frozen = True, slots = True)
 class Move:
+	"""Represents a move in the game."""
 	fromSquare: Square
 	toSquare: Square
 	promotionPiece: Piece | None = None

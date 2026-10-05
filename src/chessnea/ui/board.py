@@ -1,14 +1,16 @@
 import logging
+import math
 from dataclasses import dataclass
 
 import pygame
 
-from chessnea.core import position, types
+from chessnea.core import types
 from chessnea.ui import assets, theme
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
 MIN_BOARD_PX: int = 480
+TOP_BAR_PX_FACTOR: float = 0 # Standard factor is 1/16
 BOARD_TO_RESOLUTION_FACTOR: float = 0.8 # 80% of screen width/height is used
 
 @dataclass(frozen = True)
@@ -22,11 +24,13 @@ class Layout:
     def fromBoardPx(cls, boardPx: int) -> "Layout":
         boardPx = max(MIN_BOARD_PX, boardPx) # Enforce minimum board size
         boardPx -= boardPx % 8 # Remove excess pixels after setting the 8 square division factor
+        topBar = math.floor(boardPx * TOP_BAR_PX_FACTOR)
         return cls(
             boardPx = boardPx,
             squarePx = boardPx // 8,
-            topBarPx = boardPx // 16,
-            window = (boardPx, boardPx + boardPx // 16),
+            topBarPx = topBar,
+            # topBarPx = boardPx // 16,
+            window = (boardPx, boardPx + topBar),
         )
 
 class BoardViewport:
@@ -77,7 +81,7 @@ class BoardViewport:
 		)
 
 
-    def renderBoard(self, screen: pygame.Surface, boardPosition: position.Position) -> None:
+    def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position) -> None:
         self.drawBoardBackgroundSurface(screen = screen)
         for row, rank in enumerate(boardPosition.board):
             for col, (piece, colour) in enumerate(rank):
