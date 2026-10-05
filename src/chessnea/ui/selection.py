@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 
-from chessnea.core.types import Move, Square
+from chessnea.core.types import Move, SelectionState, Square
 
 
 @dataclass
-class SelectionState:
+class Selection:
+	state: SelectionState
 	selectedSquare: Square | None = None
 	possibleMoves: tuple[Move, ...] = ()
 	dragging: bool = False 

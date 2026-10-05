@@ -11,7 +11,7 @@ logger: logging.Logger = logging.getLogger(name = __name__)
 from chessnea import __version__
 from chessnea.core import fen, types
 from chessnea.ui import board
-from chessnea.ui.selection import SelectionState
+from chessnea.ui.selection import Selection
 
 FPS: int = 60
 
@@ -47,34 +47,37 @@ class App:
             logger.info(msg = f"Init: Using board size {boardPx}px from command-line argument")
         self.layout: board.Layout = board.Layout.fromBoardPx(boardPx = boardPx)
         self.screen: pygame.Surface = pygame.display.set_mode(size = self.layout.window)
-        print(self.layout.window)
-        self.selectionState: SelectionState = SelectionState()
+        self.selection: Selection = Selection()
         logger.info(msg = f"Init: Display created with configuration: {self.layout.boardPx}x{self.layout.boardPx + self.layout.topBarPx}px window, with {self.layout.squarePx}px squares")
         pygame.display.set_caption("Chessnea")
-        boardPosition: types.Position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
+        self.boardPosition: types.Position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
         self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
         logger.debug(msg = "Init: Starting main loop")
         running: bool = True
         while running:
+            mousePosition: tuple[int, int] = pygame.mouse.get_pos()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.handleMouseClickEvent(mousePosition = pygame.mouse.get_pos())
+                    self.handleMouseClickEvent(mousePosition = mousePosition)
             _ = self.screen.fill(color = (255, 255, 255))
-            _ = self.viewport.renderBoard(screen = self.screen, boardPosition = boardPosition)
-            _ = clock.tick(FPS)
+            _ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition)
             pygame.display.flip()
+            _ = clock.tick(FPS)
 
     def handleMouseClickEvent(self, mousePosition: tuple[int, int]) -> None:
+        """Handles mouse clicks within the UI"""
         square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
+        
+        # Pickup a piece
         if square is not None:
             logger.debug(msg = f"Input: Mouse click at square {square}, setting selection state: selectedSquare={square}, possibleMoves=[{square}], dragging=True")
             testTuple: tuple[types.Move, ...] = (types.Move(fromSquare = square, toSquare = (square)), )
-            self.selectionState.select(square, possibleMoves = testTuple, dragging = True)
+            self.selection.select(square, possibleMoves = testTuple, dragging = True)
         else:
             logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
-            self.selectionState.clear()
+            self.selection.clear()
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description = "Chessnea", suggest_on_error = True)
