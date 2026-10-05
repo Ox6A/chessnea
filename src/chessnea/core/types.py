@@ -137,3 +137,8 @@ class Move:
 	fromSquare: Square
 	toSquare: Square
 	promotionPiece: Piece | None = None
+
+class SelectionState(IntEnum):
+    NONE = 0
+    DRAGGING = 1
+    SELECTED = 2

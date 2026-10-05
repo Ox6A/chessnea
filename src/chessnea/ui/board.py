@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pygame
 
 from chessnea.core import types
-from chessnea.ui import assets, theme
+from chessnea.ui import assets, selection, theme
 
 logger: logging.Logger = logging.getLogger(name = __name__)
 
@@ -81,12 +81,15 @@ class BoardViewport:
 		)
 
 
-    def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position) -> None:
+    def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
         self.drawBoardBackgroundSurface(screen = screen)
         for row, rank in enumerate(boardPosition.board):
             for col, (piece, colour) in enumerate(rank):
                 if piece == types.Piece.EMPTY:
                     continue
                 sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
+                if selectionState.selectedSquare == types.Square((row, col)):
+                    _ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
+                    continue
                 rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))
                 _ = screen.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
