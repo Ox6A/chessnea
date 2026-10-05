@@ -1,6 +1,7 @@
+"""Defines FEN (Forsyth-Edwards Notation) handling functions."""
 import logging
 
-from chessnea.core import position, types
+from chessnea.core import types
 
 FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
@@ -21,7 +22,7 @@ def parseBoardCoordinatesToFENCoordinates(row: int, col: int) -> str:
 		raise ValueError(f"FEN: Invalid input internal square field: {row} {col}")
 	return f"{'abcdefgh'[col]}{8 - row}"
 
-def importFENToPositionObject(fen: str) -> position.Position:
+def importFENToPositionObject(fen: str) -> types.Position:
 	fenParts: list[str] = fen.split()
 	if len(fenParts) != 6:
 		raise ValueError(f"FEN: Expected 6 parts, got {len(fenParts)} in {fen}")
@@ -113,7 +114,7 @@ def importFENToPositionObject(fen: str) -> position.Position:
 		raise ValueError(f"FEN: Expected valid full move counter, got {fullMoveCounterFEN} in {fen}")
 	parsedFullMoveCounter: int = int(fullMoveCounterFEN)
  
-	positionFilled: position.Position = position.Position(
+	positionFilled: types.Position = types.Position(
 		board = parsedBoard,
 		sideToMove = parsedSideToMove,
 		castlingRights = parsedCastlingRights,
@@ -121,11 +122,11 @@ def importFENToPositionObject(fen: str) -> position.Position:
 		fiftyMoveCounter = parsedFiftyMoveCounter,
 		fullMoveCounter = parsedFullMoveCounter
 	)
-	
+	logger.debug(msg = f"FEN: Imported position from FEN: {fen}")
 	return positionFilled
 	
  
-def exportPositionObjectToFEN(position: position.Position) -> str:
+def exportPositionObjectToFEN(position: types.Position) -> str:
 	# encode board FEN
 	boardFEN: str = ""
 	for rank in position.board:
@@ -180,6 +181,6 @@ def exportPositionObjectToFEN(position: position.Position) -> str:
  
 	# encode full move counter FEN
 	fullMoveCounterFEN: str = str(position.fullMoveCounter)
- 
+	logger.debug(msg = f"FEN: Exported position to FEN: {boardFEN} {sideToMoveFEN} {castlingRightsFEN} {enPassantTargetSquareFEN} {fiftyMoveCounterFEN} {fullMoveCounterFEN}")
 	return f"{boardFEN} {sideToMoveFEN} {castlingRightsFEN} {enPassantTargetSquareFEN} {fiftyMoveCounterFEN} {fullMoveCounterFEN}"
   

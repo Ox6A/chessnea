@@ -37,7 +37,7 @@ def loadSprites(squarePx: int) -> dict[tuple[types.PieceColour, types.Piece], py
 			try:
 				# Load the .svg as a scaled pygame.Surface to the square size for sprite quality
 				img: pygame.Surface = pygame.image.load_sized_svg(file = filePath, size = (size, size)).convert_alpha()
-				logger.info(msg = f"UI/Assets: Loaded piece {types.PieceToDisplayName.COLOUR[colour]} {types.PieceToDisplayName.PIECE[piece]} from {filePath}")
+				logger.debug(msg = f"UI/Assets: Loaded piece {types.PieceToDisplayName.COLOUR[colour]} {types.PieceToDisplayName.PIECE[piece]} from {filePath}")
 			except FileNotFoundError:
 				logger.error(msg = f"UI/Assets: Could not find piece sprite file {filename} in {theme.ASSETS_PIECE_SET_DIR}!")
 				raise FileNotFoundError(f"UI/Assets: Could not find piece sprite file {filename} in {theme.ASSETS_PIECE_SET_DIR}!")
