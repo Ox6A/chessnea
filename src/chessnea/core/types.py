@@ -59,23 +59,23 @@ class CastlingRights(IntEnum):
 
 @dataclass(frozen = True)
 class Position:
-    """A snapshot of the board state.
+	"""A snapshot of the board state.
 
-    Attributes:
-        board: tuple[tuple[BoardSquare, ...], ...] - Rows of (piece, colour) cells.
-        sideToMove: PieceColour - The player whose turn it is.
-        castlingRights: CastlingRights - Remaining castling rights.
-        enPassantTargettableSquare: Square | None - En passant target.
-        fiftyMoveCounter: int - Half-moves since the last pawn move or capture.
-        fullMoveCounter: int - Full-move number.
-    """
+	Attributes:
+		board: tuple[tuple[BoardSquare, ...], ...] - Rows of (piece, colour) cells.
+		sideToMove: PieceColour - The player whose turn it is.
+		castlingRights: CastlingRights - Remaining castling rights.
+		enPassantTargettableSquare: Square | None - En passant target.
+		fiftyMoveCounter: int - Half-moves since the last pawn move or capture.
+		fullMoveCounter: int - Full-move number.
+	"""
 
-    board: Board
-    sideToMove: PieceColour
-    castlingRights: frozenset[CastlingRights]  # Corresponds to types.CastlingRights LUT
-    enPassantTargettableSquare: Square | None
-    fiftyMoveCounter: int
-    fullMoveCounter: int
+	board: Board
+	sideToMove: PieceColour
+	castlingRights: frozenset[CastlingRights]  # Corresponds to types.CastlingRights LUT
+	enPassantTargettableSquare: Square | None
+	fiftyMoveCounter: int
+	fullMoveCounter: int
 
 class PieceToFEN:
 	""" Converts a types.Piece type to a FEN compatible string.
@@ -139,6 +139,6 @@ class Move:
 	promotionPiece: Piece | None = None
 
 class SelectionState(IntEnum):
-    NONE = 0
-    DRAGGING = 1
-    SELECTED = 2
+	NONE = 0
+	DRAGGING = 1
+	SELECTED = 2
