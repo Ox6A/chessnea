@@ -89,7 +89,7 @@ class BoardViewport:
 				if piece == types.Piece.EMPTY:
 					continue
 				sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
-				if selectionState.selectedSquare == types.Square((row, col)):
+				if selectionState.selectedSquare == types.Square((row, col)) and selectionState.mouseDown == True:
 					selectedPiecesToRender.append(sprite)
 					continue
 				rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))

@@ -58,13 +58,14 @@ class App:
 		running: bool = True
 
 		pos: tuple[int, int]
+		button: int
 		while running:
 			mousePosition: tuple[int, int] = pygame.mouse.get_pos()
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
 				elif event.type == pygame.MOUSEBUTTONDOWN:
-					button: int = typing.cast(int, event.button)
+					button = typing.cast(int, event.button)
 					pos = typing.cast(tuple[int, int], event.pos)
 					if button == 1:
 						self.handleMouseEvent(mousePosition = pos, event = event)
@@ -75,8 +76,8 @@ class App:
 					buttonsHeld: tuple[int, int, int] = typing.cast(tuple[int, int, int], event.buttons)
 					if buttonsHeld[0] and mouseDownPosition is not None and self.selection.state == types.SelectionState.SELECTED:
 						distanceFromSquare: tuple[int, int] = (pos[0] - mouseDownPosition[0], pos[1] - mouseDownPosition[1])
-						print(distanceFromSquare)
-						if distanceFromSquare[0] > 5 or distanceFromSquare[1] > 5:
+						modulusFromSquare: float = typing.cast(float, (distanceFromSquare[0] ** 2 + distanceFromSquare[1] ** 2) ** 0.5)
+						if modulusFromSquare > self.layout.squarePx * 0.25:
 							self.selection.state = types.SelectionState.DRAGGING
 							logger.debug(msg = "Input: Switching selection state from SELECTED to DRAGGING")
 				elif event.type == pygame.MOUSEBUTTONUP:
@@ -119,6 +120,7 @@ class App:
 			if self.selection.state == types.SelectionState.DRAGGING:
 				logger.debug(msg = f"Input: Dropping piece at square {square}")
 				self.selection.clear()
+			self.selection.mouseDown = False
 		else:
 			return
 
