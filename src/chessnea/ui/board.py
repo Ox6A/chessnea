@@ -1,4 +1,3 @@
-from datetime import datetime_CAPI
 import logging
 import math
 from dataclasses import dataclass
@@ -54,9 +53,6 @@ class BoardViewport:
 				_ = pygame.draw.rect(surface = surface, color = colour, rect = (col * self.layout.squarePx, row * self.layout.squarePx, self.layout.squarePx, self.layout.squarePx))
 		return surface
 
-	# def drawBoardBackgroundSurface(self, screen: pygame.Surface) -> None:
-	# 	_ = screen.blit(source = self.backgroundSurface, dest = (0, self.layout.topBarPx))
-
 	def getSprite(self, colour: types.PieceColour, piece: types.Piece) -> pygame.Surface:
 		try:
 			return self.sprites[(colour, piece)]
@@ -86,26 +82,11 @@ class BoardViewport:
 	def drawSelectedPiece(self, screen: pygame.Surface, sprite: pygame.Surface, mousePosition: tuple[int, int]) -> None:
 		_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
 
-	# def refreshBoardCache(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
-	# 	self.drawBoardBackgroundSurface(screen = screen)
-	# 	selectedPiecesToRender: list[pygame.Surface] = []
-	# 	for row, rank in enumerate[tuple[types.BoardSquare, ...]](boardPosition.board):
-	# 		for col, (piece, colour) in enumerate[types.BoardSquare](rank):
-	# 			if piece == types.Piece.EMPTY:
-	# 				continue
-	# 			sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
-	# 			if selectionState.selectedSquare == types.Square((row, col)) and selectionState.mouseDown == True:
-	# 				selectedPiecesToRender.append(sprite)
-	# 				continue
-	# 			rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))
-	# 			_ = screen.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
-	
-	# 	# Render selected pieces
-	# 	for sprite in selectedPiecesToRender:
-	# 		self.drawSelectedPiece(screen = screen, sprite = sprite, mousePosition = mousePosition)
-
+	# Caching system: At (480px, static), 182.2 mus -> 74.7 mus. 2.44x speedup (1.86x at 960px)
+	# Slower overall for per frame rendering: (480px), 185.1 mus -> 354.4 mus. 1.91x slowdown (2.47x slower at 960px)
 	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection) -> pygame.Surface:
 		boardSurface: pygame.Surface = self.backgroundSurface.copy()
+		rect: pygame.Rect
 		if cacheLevel == types.CacheLevel.STATIONARY:
 			for row, rank in enumerate[tuple[types.BoardSquare, ...]](boardPosition.board):
 				for col, (piece, colour) in enumerate[types.BoardSquare](rank):
@@ -114,7 +95,7 @@ class BoardViewport:
 					sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
 					if selectionState.selectedSquare == types.Square((row, col)) and selectionState.mouseDown == True:
 						continue
-					rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))
+					rect = self.getSquareRectAtGamePosition(square = (row, col))
 					# Account for the top bar offset given by our helper
 					rect = rect.move(0, -self.layout.topBarPx)
 					_ = boardSurface.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
@@ -123,20 +104,45 @@ class BoardViewport:
 			if self.stationaryBoardCache is None:
 				raise ValueError("Render: Stationary cache is None when refreshing highlighted cache")
 			_ = boardSurface.blit(source = self.stationaryBoardCache.surface, dest = (0, 0))
-			# Rest is to-do
+			
+			# Move highlighting
+			if selectionState.possibleMoves:
+				# We use a surface with alpha channel to draw the move highlighting dots, then blit it onto the board surface
+				highlightSurface: pygame.Surface = pygame.Surface(size = boardSurface.get_size(), flags = pygame.SRCALPHA)
+				for move in selectionState.possibleMoves:
+					rect = self.getSquareRectAtGamePosition(square = move.toSquare)
+					# Account for the top bar offset given by our helper
+					rect = rect.move(0, -self.layout.topBarPx)
+					# Empty square highlight
+					if boardPosition.board[move.toSquare[0]][move.toSquare[1]][0] == types.Piece.EMPTY:
+						_ = pygame.draw.aacircle(
+							surface = highlightSurface, 
+							color = theme.SQUARE_HIGHLIGHT_MOVE, 
+							center = rect.center,
+							radius = self.layout.squarePx // 8)
+					else:
+						# Set clip to bound circle to the square rect bounds
+						previousClip: pygame.Rect = highlightSurface.get_clip()
+						highlightSurface.set_clip(rect)
+						_ = pygame.draw.aacircle(
+							surface = highlightSurface,
+							color = theme.SQUARE_HIGHLIGHT_MOVE_CAPTURE,
+							center = rect.center,
+							radius = self.layout.squarePx // 2 + self.layout.squarePx // 4,
+							width = self.layout.squarePx // 4)
+						highlightSurface.set_clip(previousClip)
+				_ = boardSurface.blit(source = highlightSurface, dest = (0, 0))
 		return boardSurface
 
 	
 	def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
-		boardState: types.Board = boardPosition.board
-		cachedSurface: pygame.Surface
-		
 		# We use 2 levels of cache in order to optimise rendering as much as possible.
 		# Try stationary cache first
+		cachedSurface: pygame.Surface
+		boardState: types.Board = boardPosition.board
 		squareBoundToCursor: types.Square | None = selectionState.selectedSquare if selectionState.mouseDown else None
 		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.selectedSquare != squareBoundToCursor:
 			# Stationary cache miss
-			logger.debug(msg = "Render: Stationary cache miss")
 			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState)
 			self.stationaryBoardCache = types.StationaryBoardCache(
 				surface = cachedSurface,
@@ -149,7 +155,6 @@ class BoardViewport:
 		# Try highlighted cache next
 		if self.highlightedBoardCache is None or self.highlightedBoardCache.selectedSquare != selectionState.selectedSquare:
 			# Highlighted cache miss
-			logger.debug(msg = "Render: Highlighted cache miss")
 			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState)
 			self.highlightedBoardCache = types.HighlightedBoardCache(
 				surface = cachedSurface,

@@ -138,7 +138,13 @@ class FENToPiece:
 # move to a simpler system to make UCI moves and board moves analagous
 @dataclass(frozen = True, slots = True)
 class Move:
-	"""Represents a move in the game."""
+	"""Represents a move in the game.
+	
+	Attributes:
+		fromSquare: The starting square of the move.
+		toSquare: The ending square of the move.
+		promotionPiece: The piece to promote to.
+	"""
 	fromSquare: Square
 	toSquare: Square
 	promotionPiece: Piece | None = None
