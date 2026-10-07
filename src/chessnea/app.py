@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+import typing
 from os import environ
 
 import pygame
@@ -53,38 +54,78 @@ class App:
 		self.boardPosition: types.Position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
 		self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
 		logger.debug(msg = "Init: Starting main loop")
+		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
+
+		pos: tuple[int, int]
 		while running:
 			mousePosition: tuple[int, int] = pygame.mouse.get_pos()
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
 				elif event.type == pygame.MOUSEBUTTONDOWN:
-					self.handleMouseClickEvent(mousePosition = mousePosition)
+					button: int = typing.cast(int, event.button)
+					pos = typing.cast(tuple[int, int], event.pos)
+					if button == 1:
+						self.handleMouseEvent(mousePosition = pos, event = event)
+						if self.selection.selectedSquare is not None:
+							mouseDownPosition = pos
+				elif event.type == pygame.MOUSEMOTION:
+					pos = typing.cast(tuple[int, int], event.pos)
+					buttonsHeld: tuple[int, int, int] = typing.cast(tuple[int, int, int], event.buttons)
+					if buttonsHeld[0] and mouseDownPosition is not None and self.selection.state == types.SelectionState.SELECTED:
+						distanceFromSquare: tuple[int, int] = (pos[0] - mouseDownPosition[0], pos[1] - mouseDownPosition[1])
+						print(distanceFromSquare)
+						if distanceFromSquare[0] > 5 or distanceFromSquare[1] > 5:
+							self.selection.state = types.SelectionState.DRAGGING
+							logger.debug(msg = "Input: Switching selection state from SELECTED to DRAGGING")
+				elif event.type == pygame.MOUSEBUTTONUP:
+					button: int = typing.cast(int, event.button)
+					pos = typing.cast(tuple[int, int], event.pos)
+					if button == 1:
+						self.handleMouseEvent(mousePosition = pos, event = event)
 			_ = self.screen.fill(color = (255, 255, 255))
 			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition)
 			pygame.display.flip()
 			_ = clock.tick(FPS)
 
-	def handleMouseClickEvent(self, mousePosition: tuple[int, int]) -> None:
+	def handleMouseEvent(self, mousePosition: tuple[int, int], event: pygame.event.Event) -> None:
 		"""Handles mouse clicks within the UI"""
 		square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
-		
-		# Pickup a piece
-		if square is not None:
-			if self.selection.state == types.SelectionState.SELECTED:
-				logger.debug(msg = f"Input: Mouse click at square {square}, setting selection state: selectedSquare={square}, possibleMoves=[{square}], dragging=True")
-			else:
-				testTuple: tuple[types.Move, ...] = (types.Move(fromSquare = square, toSquare = (square)), )
-				self.selection.select(square, possibleMoves = testTuple, state = types.SelectionState.SELECTED, dragging = True)
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			if square is None:
+				logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
+				self.selection.clear()
+				return
+			# Put down a piece
+			if self.selection.selectedSquare is not None:
+				if square == self.selection.selectedSquare:
+					logger.debug(msg = f"Input: Putting down piece on the same square {square}")
+				else:
+					logger.debug(msg = f"Input: Putting down piece from {self.selection.selectedSquare} on a different square {square}")
+				self.selection.clear()
+				return
+
+			# Pickup a piece
+			piece, colour = self.boardPosition.board[square[0]][square[1]]
+			if self.boardPosition.sideToMove != colour:
+				return
+			if piece == types.Piece.EMPTY:
+				logger.debug(msg = f"Input: Mouse click at empty square {square}, no piece to pick up")
+				return
+			logger.debug(msg = f"Input: Picking up {colour.name} {piece.name} at square {square}")
+			self.selection.select(square = square, possibleMoves = (), state = types.SelectionState.SELECTED)
+		elif event.type == pygame.MOUSEBUTTONUP:
+			if self.selection.state == types.SelectionState.DRAGGING:
+				logger.debug(msg = f"Input: Dropping piece at square {square}")
+				self.selection.clear()
 		else:
-			logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
-			self.selection.clear()
+			return
 
 def main() -> None:
 	parser: argparse.ArgumentParser = argparse.ArgumentParser(description = "Chessnea", suggest_on_error = True)
 	_ = parser.add_argument("--version", action = "version", version = __version__)
-	_ = parser.add_argument("--board-size", type = checkPositiveIntFromArgument, default = None, metavar = "PX", help="Board size in pixels, e.g. 800 [default: auto-scale]")
+	_ = parser.add_argument("--board-size", type = checkPositiveIntFromArgument, default = None, metavar = "PX", help = "Board size in pixels, e.g. 800 [default: auto-scale]")
 	_ = parser.add_argument("--debug", action = "store_true", help="Enable debug logging")
 	args: argparse.Namespace = parser.parse_args()
 	if args.debug:  # pyright: ignore[reportAny]
