@@ -23,6 +23,7 @@ class PieceColour(IntEnum):
 	WHITE = 0
 	BLACK = 1
 
+
 BoardSquare: typing.TypeAlias = tuple[Piece, PieceColour]
 """Represents a square on the chessboard as a (piece, colour) tuple."""
 
