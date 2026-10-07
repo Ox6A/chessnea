@@ -10,16 +10,19 @@ class Selection:
 	state: SelectionState = SelectionState.NONE
 	selectedSquare: Square | None = None
 	possibleMoves: tuple[Move, ...] = ()
+	mouseDown: bool = False
 
 	def select(self, square: Square, possibleMoves: tuple[Move, ...], state: SelectionState) -> None:
 		"""Updates the selection state with the given square, possible moves, and dragging status."""
 		self.selectedSquare = square
 		self.state = state
 		self.possibleMoves = possibleMoves
+		self.mouseDown = True
 	
 	def clear(self) -> None:
 		"""Clears the selection state."""
 		self.state = SelectionState.NONE
 		self.selectedSquare = None
 		self.possibleMoves = ()
+		self.mouseDown = False
 		
