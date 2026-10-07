@@ -14,7 +14,13 @@ class Selection:
 	deselectPieceOnMouseUp: bool = False
 
 	def select(self, square: Square, possibleMoves: tuple[Move, ...], state: SelectionState) -> None:
-		"""Updates the selection state with the given square, possible moves, and dragging status."""
+		"""Updates the selection state with the given square, possible moves, and dragging status.
+
+		Args:
+			square: Selected board square as types.Square.
+			possibleMoves: Possible moves associated with the selected piece.
+			state: Selection state.
+		"""
 		self.selectedSquare = square
 		self.state = state
 		self.possibleMoves = possibleMoves
