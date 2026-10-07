@@ -1,3 +1,5 @@
+"""Handles the loading of assets for the chess UI."""
+
 import logging
 
 import pygame

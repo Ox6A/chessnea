@@ -1,3 +1,5 @@
+"""Defines the theme for the chess UI."""
+
 from pathlib import Path
 
 PIECE_SET_IDENTIFIER: str = "cburnett"

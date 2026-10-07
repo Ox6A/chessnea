@@ -11,6 +11,7 @@ logger: logging.Logger = logging.getLogger(name = __name__)
 
 from chessnea import __version__
 from chessnea.core import fen, types
+from chessnea.rules import moves
 from chessnea.ui import board
 from chessnea.ui.selection import Selection
 
@@ -125,7 +126,8 @@ class App:
 				logger.debug(msg = f"Input: Mouse click at empty square {square}, no piece to pick up")
 				return
 			logger.debug(msg = f"Input: Picking up {colour.name} {piece.name} at square {square}")
-			self.selection.select(square = square, possibleMoves = (), state = types.SelectionState.SELECTED)
+			possibleMoves = moves.PseudoLegalMoves.movesForPiece(position = self.boardPosition, square = square)
+			self.selection.select(square = square, possibleMoves = possibleMoves, state = types.SelectionState.SELECTED)
 		elif event.type == pygame.MOUSEBUTTONUP:
 			if self.selection.state == types.SelectionState.DRAGGING:
 				logger.debug(msg = f"Input: Dropping piece at square {square}")
