@@ -92,7 +92,12 @@ class App:
 			_ = clock.tick(FPS)
 
 	def handleMouseEvent(self, mousePosition: tuple[int, int], event: pygame.event.Event) -> None:
-		"""Handles mouse clicks within the UI"""
+		"""Handles mouse clicks within the UI.
+
+		Args:
+			mousePosition: Mouse coordinates in pixels (x, y).
+			event: Pygame event.
+		"""
 		square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if square is None:

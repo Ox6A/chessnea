@@ -41,11 +41,15 @@ class BoardViewport:
 
 	@dataclass(frozen = True, slots = True)
 	class HighlightedBoardCache:
-		"""
+		"""Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
 
-		Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
-		Rebuilt when selection state changes (piece selected/deselected)
-		Surface, Board state, dragged piece location, move highlighting
+		Rebuilt when selection highlighting changes (piece selected/deselected)
+		or stationaryBoardCache is rebuilt.
+
+		Attributes:
+			surface: Surface for the entire board.
+			selectedSquare: Selection square, or None.
+			possibleMoves: Possible moves used for move highlighting.
 		"""
 		surface: pygame.Surface
 		selectedSquare: types.Square | None

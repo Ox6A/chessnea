@@ -32,10 +32,10 @@ Board: typing.TypeAlias = tuple[tuple[BoardSquare, ...], ...]
 
 class PieceToDisplayName:
 	"""Converts a types.Piece type to a human-readable string.
-	
-	Usage:
-		PieceToDisplayName.PIECE[types.Piece] = returns str.
-		PieceToDisplayName.COLOUR[types.PieceColour] = returns str.
+
+	Examples:
+		PieceToDisplayName.PIECE[Piece.PAWN] -> "Pawn"
+		PieceToDisplayName.COLOUR[PieceColour.WHITE] -> "White"
 	"""
 	PIECE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.EMPTY: "Empty",
@@ -63,12 +63,12 @@ class Position:
 	"""A snapshot of the board state.
 
 	Attributes:
-		board: tuple[tuple[BoardSquare, ...], ...] - Rows of (piece, colour) cells.
-		sideToMove: PieceColour - The player whose turn it is.
-		castlingRights: CastlingRights - Remaining castling rights.
-		enPassantTargettableSquare: Square | None - En passant target.
-		fiftyMoveCounter: int - Half-moves since the last pawn move or capture.
-		fullMoveCounter: int - Full-move number.
+		board (tuple[tuple[BoardSquare, ...], ...]): Rows of (piece, colour) cells.
+		sideToMove (PieceColour): The player whose turn it is.
+		castlingRights (frozenset[CastlingRights]): Remaining castling rights.
+		enPassantTargettableSquare (Square | None): En passant target.
+		fiftyMoveCounter (int): Half-moves since the last pawn move or capture.
+		fullMoveCounter (int): Full-move number.
 	"""
 
 	board: Board
@@ -79,10 +79,11 @@ class Position:
 	fullMoveCounter: int
 
 class PieceToFEN:
-	""" Converts a types.Piece type to a FEN compatible string.
-	Usage:
-		PieceToFEN.WHITE[types.Piece] = returns FEN str.
-		PieceToFEN.BLACK[types.Piece] = returns FEN str.
+	"""Converts a types.Piece type to a FEN compatible string.
+
+	Examples:
+		PieceToFEN.WHITE[Piece.PAWN] -> 'P'
+		PieceToFEN.BLACK[Piece.PAWN] -> 'p'
 	"""
 	WHITE: typing.ClassVar[dict[Piece, str]] = {
 		Piece.PAWN: "P",
@@ -103,10 +104,11 @@ class PieceToFEN:
 	}
 
 class FENToPiece:
-	""" Converts a FEN compatible string to a types.Piece type.
-	Usage:
-		FENToPiece.PIECE[str] = returns types.Piece.
-		FENToPiece.COLOUR[str] = returns types.PieceColour.
+	"""Converts a FEN compatible string to a types.Piece type.
+
+	Examples:
+		FENToPiece.PIECE['P'] -> returns types.Piece.
+		FENToPiece.COLOUR['p'] -> returns types.PieceColour.
 	"""
 	PIECE: typing.ClassVar[dict[str, Piece]] = {
 		"P": Piece.PAWN,
