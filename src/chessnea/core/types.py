@@ -60,7 +60,7 @@ class CastlingRights(IntEnum):
 	BLACK_KINGSIDE = 2
 	BLACK_QUEENSIDE = 3
 
-@dataclass(frozen = True, slots = True)
+@dataclass(slots = True)
 class Position:
 	"""A snapshot of the board state.
 
@@ -184,7 +184,7 @@ class HighlightedBoardCache:
 	"""
 	surface: pygame.Surface
 	selectedSquare: Square | None
-	possibleMoves: tuple[Move, ...]
+	possibleMoves: list[Move] | None
 
 class CacheLevel(IntEnum):
 	"""Represents the level of board cache."""

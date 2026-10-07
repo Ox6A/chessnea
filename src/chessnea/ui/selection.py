@@ -9,11 +9,11 @@ from chessnea.core.types import Move, SelectionState, Square
 class Selection:
 	state: SelectionState = SelectionState.NONE
 	selectedSquare: Square | None = None
-	possibleMoves: tuple[Move, ...] = ()
+	possibleMoves: list[Move] | None = None
 	mouseDown: bool = False
 	deselectPieceOnMouseUp: bool = False
 
-	def select(self, square: Square, possibleMoves: tuple[Move, ...], state: SelectionState) -> None:
+	def select(self, square: Square, possibleMoves: list[Move], state: SelectionState) -> None:
 		"""Updates the selection state with the given square, possible moves, and dragging status.
 
 		Args:
@@ -31,7 +31,7 @@ class Selection:
 		"""Clears the selection state."""
 		self.state = SelectionState.NONE
 		self.selectedSquare = None
-		self.possibleMoves = ()
+		self.possibleMoves = None
 		self.mouseDown = False
 		self.deselectPieceOnMouseUp = False
 		

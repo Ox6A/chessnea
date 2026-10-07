@@ -1,3 +1,5 @@
+"""Handles the rendering of the chess board."""
+
 import logging
 import math
 from dataclasses import dataclass
