@@ -4,6 +4,8 @@ import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
+import pygame
+
 Square: typing.TypeAlias = tuple[int, int] 
 """Represents a square on the chessboard as (row, col) with (0, 0) at a8 and (7, 7) at h1."""
 
@@ -145,3 +147,40 @@ class SelectionState(IntEnum):
 	NONE = 0
 	DRAGGING = 1
 	SELECTED = 2
+
+@dataclass(frozen = True, slots = True)
+class StationaryBoardCache:
+	"""Cache for the stationary board: background, static pieces minus selected piece if present.
+
+	Rebuilt when static pieces change on the board.
+
+	Attributes:
+		surface: Surface for the entire board.
+		selectedSquare: Selection square, or None.
+		boardState: Board state used for the current cached board.
+	"""
+
+	surface: pygame.Surface
+	selectedSquare: Square | None
+	boardState: Board
+
+@dataclass(frozen = True, slots = True)
+class HighlightedBoardCache:
+	"""Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
+
+	Rebuilt when selection highlighting changes (piece selected/deselected)
+	or stationaryBoardCache is rebuilt.
+
+	Attributes:
+		surface: Surface for the entire board.
+		selectedSquare: Selection square, or None.
+		possibleMoves: Possible moves used for move highlighting.
+	"""
+	surface: pygame.Surface
+	selectedSquare: Square | None
+	possibleMoves: tuple[Move, ...]
+
+class CacheLevel(IntEnum):
+	"""Represents the level of board cache."""
+	STATIONARY = 0
+	HIGHLIGHTED = 1
