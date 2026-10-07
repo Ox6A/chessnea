@@ -1,3 +1,4 @@
+from datetime import datetime_CAPI
 import logging
 import math
 from dataclasses import dataclass
@@ -34,10 +35,34 @@ class Layout:
 		)
 
 class BoardViewport:
+
+	@dataclass(frozen = True, slots = True)
+	class StationaryBoardCache
+
+	@dataclass(frozen = True, slots = True)
+	class HighlightedBoardCache:
+		"""
+
+		Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
+		Rebuilt when selection state changes (piece selected/deselected)
+		Surface, Board state, dragged piece location, move highlighting
+		"""
+		surface: pygame.Surface
+		selectedSquare: types.Square | None
+		possibleMoves: tuple[types.Move, ...]
+
 	def __init__(self, layout: Layout) -> None:
 		self.layout: Layout = layout
-		self.sprites: dict[tuple[types.PieceColour, types.Piece], pygame.Surface]= assets.loadSprites(squarePx = self.layout.squarePx)
+		self.sprites: dict[tuple[types.PieceColour, types.Piece], pygame.Surface] = assets.loadSprites(squarePx = self.layout.squarePx)
 		self.backgroundSurface: pygame.Surface = self.createBoardBackgroundSurface()
+
+		
+		# Cache for board background + static pieces. Rebuilt when board arrangement changes (piece changed)
+		# Contains: Surface, Board state, dragged piece location
+		self.stationaryBoardCache: tuple[pygame.Surface, types.Board, types.Square | None] | None = None
+
+
+		self.decoratedBoardCache: tuple[pygame.Surface, types.Square | None, tuple[types.Move, ...]] | None = None
 
 	def createBoardBackgroundSurface(self) -> pygame.Surface:
 		surface: pygame.Surface = pygame.Surface((self.layout.boardPx, self.layout.boardPx))
@@ -80,8 +105,10 @@ class BoardViewport:
 			size
 		)
 
+	def drawSelectedPiece(self, screen: pygame.Surface, sprite: pygame.Surface, mousePosition: tuple[int, int]) -> None:
+		_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
 
-	def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
+	def refreshBoardCache(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
 		self.drawBoardBackgroundSurface(screen = screen)
 		selectedPiecesToRender: list[pygame.Surface] = []
 		for row, rank in enumerate[tuple[types.BoardSquare, ...]](boardPosition.board):
@@ -94,7 +121,11 @@ class BoardViewport:
 					continue
 				rect: pygame.Rect = self.getSquareRectAtGamePosition(square = (row, col))
 				_ = screen.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
-    
+	
 		# Render selected pieces
 		for sprite in selectedPiecesToRender:
-			_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
+			self.drawSelectedPiece(screen = screen, sprite = sprite, mousePosition = mousePosition)
+	
+	def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
+		# Try stationary cache first
+		cached

@@ -58,7 +58,7 @@ class CastlingRights(IntEnum):
 	BLACK_KINGSIDE = 2
 	BLACK_QUEENSIDE = 3
 
-@dataclass(frozen = True)
+@dataclass(frozen = True, slots = True)
 class Position:
 	"""A snapshot of the board state.
 

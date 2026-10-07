@@ -81,10 +81,11 @@ class App:
 							self.selection.state = types.SelectionState.DRAGGING
 							logger.debug(msg = "Input: Switching selection state from SELECTED to DRAGGING")
 				elif event.type == pygame.MOUSEBUTTONUP:
-					button: int = typing.cast(int, event.button)
+					button = typing.cast(int, event.button)
 					pos = typing.cast(tuple[int, int], event.pos)
 					if button == 1:
 						self.handleMouseEvent(mousePosition = pos, event = event)
+						mouseDownPosition = None
 			_ = self.screen.fill(color = (255, 255, 255))
 			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition)
 			pygame.display.flip()
@@ -102,6 +103,10 @@ class App:
 			if self.selection.selectedSquare is not None:
 				if square == self.selection.selectedSquare:
 					logger.debug(msg = f"Input: Putting down piece on the same square {square}")
+					# Delay deselection until release so this press can transition to selection.state.DRAGGING
+					self.selection.deselectPieceOnMouseUp = True
+					self.selection.mouseDown = True
+					return
 				else:
 					logger.debug(msg = f"Input: Putting down piece from {self.selection.selectedSquare} on a different square {square}")
 				self.selection.clear()
@@ -119,6 +124,10 @@ class App:
 		elif event.type == pygame.MOUSEBUTTONUP:
 			if self.selection.state == types.SelectionState.DRAGGING:
 				logger.debug(msg = f"Input: Dropping piece at square {square}")
+				self.selection.clear()
+			elif self.selection.deselectPieceOnMouseUp:
+				# No drag started so treat the second click as deselect
+				logger.debug(msg = f"Input: Deselecting piece at square {self.selection.selectedSquare}")
 				self.selection.clear()
 			self.selection.mouseDown = False
 		else:
