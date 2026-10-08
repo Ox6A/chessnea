@@ -89,12 +89,13 @@ class BoardViewport:
 	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection) -> pygame.Surface:
 		boardSurface: pygame.Surface = self.backgroundSurface.copy()
 		rect: pygame.Rect
+		sprite: pygame.Surface
 		if cacheLevel == types.CacheLevel.STATIONARY:
 			for row, rank in enumerate[tuple[types.BoardSquare, ...]](boardPosition.board):
 				for col, (piece, colour) in enumerate[types.BoardSquare](rank):
 					if piece == types.Piece.EMPTY:
 						continue
-					sprite: pygame.Surface = self.getSprite(colour = colour, piece = piece)
+					sprite = self.getSprite(colour = colour, piece = piece)
 					if selectionState.selectedSquare == types.Square((row, col)) and selectionState.mouseDown == True:
 						continue
 					rect = self.getSquareRectAtGamePosition(square = (row, col))
@@ -106,7 +107,31 @@ class BoardViewport:
 			if self.stationaryBoardCache is None:
 				raise ValueError("Render: Stationary cache is None when refreshing highlighted cache")
 			_ = boardSurface.blit(source = self.stationaryBoardCache.surface, dest = (0, 0))
-			
+   
+			if selectionState.selectedSquare:
+				rect = self.getSquareRectAtGamePosition(square = selectionState.selectedSquare)
+				rect = rect.move(0, -self.layout.topBarPx)
+				_ = boardSurface.blit(
+					source = self.backgroundSurface,
+					dest = rect.topleft,
+					area = rect
+				)
+    
+				selectedSquareHighlightSurface: pygame.Surface = pygame.Surface(
+					size = rect.size,
+					flags = pygame.SRCALPHA
+				)
+				_ = selectedSquareHighlightSurface.fill(color = theme.SQUARE_HIGHLIGHT)
+				_ = boardSurface.blit(
+					source = selectedSquareHighlightSurface,
+					dest = rect.topleft
+				)
+				if not selectionState.mouseDown:
+					row, col = selectionState.selectedSquare
+					piece, colour = boardPosition.board[row][col]
+					sprite = self.getSprite(colour = colour, piece = piece)
+					_ = boardSurface.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
+    
 			# Move highlighting
 			if selectionState.possibleMoves:
 				# We use a surface with alpha channel to draw the move highlighting dots, then blit it onto the board surface
