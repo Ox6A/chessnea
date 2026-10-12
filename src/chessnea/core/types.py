@@ -32,6 +32,9 @@ BoardSquare: typing.TypeAlias = tuple[Piece, PieceColour]
 Board: typing.TypeAlias = tuple[tuple[BoardSquare, ...], ...]
 """Represents the entire chessboard as a 2-dimensional array of BoardSquares."""
 
+BoardRows: typing.TypeAlias = list[list[BoardSquare]]
+"""Represents the entire chessboard as a 2-dimensional list of BoardSquares."""
+
 class PieceToDisplayName:
 	"""Converts a types.Piece type to a human-readable string.
 

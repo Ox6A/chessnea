@@ -100,6 +100,10 @@ class App:
 			event: Pygame event.
 		"""
 		square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
+		fromSquare: types.Square
+		toSquare: types.Square
+		move: types.Move
+		possibleMoves: list[types.Move]
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if square is None:
 				logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
@@ -113,10 +117,17 @@ class App:
 					self.selection.deselectPieceOnMouseUp = True
 					self.selection.mouseDown = True
 					return
-				else:
+				elif self.viewport.getBoardSquareAtSquare(square = square, boardPosition = self.boardPosition)[1] != self.boardPosition.sideToMove:
 					logger.debug(msg = f"Input: Putting down piece from {self.selection.selectedSquare} on a different square {square}")
-				self.selection.clear()
-				return
+					fromSquare = self.selection.selectedSquare
+					toSquare = square
+					move = types.Move(fromSquare = fromSquare, toSquare = toSquare)
+					possibleMoves = typing.cast(list[types.Move], self.selection.possibleMoves)
+					if move in possibleMoves:
+						logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
+						self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
+					self.selection.clear()
+					return
 
 			# Pickup a piece
 			piece, colour = self.boardPosition.board[square[0]][square[1]]
@@ -130,7 +141,13 @@ class App:
 			self.selection.select(square = square, possibleMoves = possibleMoves, state = types.SelectionState.SELECTED)
 		elif event.type == pygame.MOUSEBUTTONUP:
 			if self.selection.state == types.SelectionState.DRAGGING:
-				logger.debug(msg = f"Input: Dropping piece at square {square}")
+				fromSquare  = typing.cast(types.Square, self.selection.selectedSquare)
+				toSquare  = typing.cast(types.Square, square)
+				move  = types.Move(fromSquare = fromSquare, toSquare = toSquare)
+				possibleMoves  = typing.cast(list[types.Move], self.selection.possibleMoves)
+				if move in possibleMoves:
+					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
+					self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
 				self.selection.clear()
 			elif self.selection.deselectPieceOnMouseUp:
 				# No drag started so treat the second click as deselect

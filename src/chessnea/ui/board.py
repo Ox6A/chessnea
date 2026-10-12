@@ -71,6 +71,9 @@ class BoardViewport:
 			return (row, col)
 		return None
 	
+	def getOtherPieceColour(self, colour: types.PieceColour) -> types.PieceColour:
+		return types.PieceColour.BLACK if colour == types.PieceColour.WHITE else types.PieceColour.WHITE
+ 
 	def getSquareRectAtGamePosition(self, square: types.Square) -> pygame.Rect:
 		row, col = square
 		size = self.layout.squarePx
@@ -80,6 +83,9 @@ class BoardViewport:
 			size,
 			size
 		)
+
+	def getBoardSquareAtSquare(self, square: types.Square, boardPosition: types.Position) -> types.BoardSquare:
+		return types.BoardSquare((boardPosition.board[square[0]][square[1]][0], boardPosition.board[square[0]][square[1]][1]))
 
 	def drawSelectedPiece(self, screen: pygame.Surface, sprite: pygame.Surface, mousePosition: tuple[int, int]) -> None:
 		_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
@@ -116,7 +122,7 @@ class BoardViewport:
 					dest = rect.topleft,
 					area = rect
 				)
-    
+	
 				selectedSquareHighlightSurface: pygame.Surface = pygame.Surface(
 					size = rect.size,
 					flags = pygame.SRCALPHA
@@ -131,7 +137,7 @@ class BoardViewport:
 					piece, colour = boardPosition.board[row][col]
 					sprite = self.getSprite(colour = colour, piece = piece)
 					_ = boardSurface.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
-    
+	
 			# Move highlighting
 			if selectionState.possibleMoves:
 				# We use a surface with alpha channel to draw the move highlighting dots, then blit it onto the board surface
