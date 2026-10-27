@@ -126,6 +126,7 @@ class App:
 					if move in possibleMoves:
 						logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
 						self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
+						self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
 					self.selection.clear()
 					return
 

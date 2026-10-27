@@ -165,12 +165,12 @@ class StationaryBoardCache:
 
 	Attributes:
 		surface: Surface for the entire board.
-		selectedSquare: Selection square, or None.
+		hiddenSquares: Set of squares that are hidden.
 		boardState: Board state used for the current cached board.
 	"""
 
 	surface: pygame.Surface
-	selectedSquare: Square | None
+	hiddenSquares: frozenset[Square]
 	boardState: Board
 
 @dataclass(frozen = True, slots = True)
@@ -193,3 +193,12 @@ class CacheLevel(IntEnum):
 	"""Represents the level of board cache."""
 	STATIONARY = 0
 	HIGHLIGHTED = 1
+
+@dataclass(frozen = True)
+class MoveAnimation:
+	fromSquare: Square
+	toSquare: Square
+	piece: Piece
+	colour: PieceColour
+	startMs: int
+	durationMs: int = 200

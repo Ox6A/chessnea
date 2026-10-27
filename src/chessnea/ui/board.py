@@ -42,6 +42,7 @@ class BoardViewport:
 		self.backgroundSurface: pygame.Surface = self.createBoardBackgroundSurface()
 		self.stationaryBoardCache: types.StationaryBoardCache | None = None
 		self.highlightedBoardCache: types.HighlightedBoardCache | None = None
+		self.moveAnimations: list[types.MoveAnimation] = []
 
 	def createBoardBackgroundSurface(self) -> pygame.Surface:
 		surface: pygame.Surface = pygame.Surface((self.layout.boardPx, self.layout.boardPx))
@@ -89,10 +90,36 @@ class BoardViewport:
 
 	def drawSelectedPiece(self, screen: pygame.Surface, sprite: pygame.Surface, mousePosition: tuple[int, int]) -> None:
 		_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
+	
+	class BoardAnimations:
+		@staticmethod
+		def easeInOutCubic(t: float) -> float:
+			"""Easing function for smooth animation."""
+			if t < 0.5:
+				return 4 * t ** 3
+			else:
+				return (t - 1) * (2 * t - 2) ** 2 + 1
+
+		@staticmethod
+		def startMoveAnimation(board: "BoardViewport", move: types.Move, boardPosition: types.Position) -> None:
+			"""Starts a move animation for a given move.
+			
+			Args:
+				board: The board viewport.
+				move: The move to animate.
+				boardPosition: The board position after the move.
+			"""
+			board.moveAnimations.append(types.MoveAnimation(
+				fromSquare = move.fromSquare,
+				toSquare = move.toSquare,
+				piece = boardPosition.board[move.toSquare[0]][move.toSquare[1]][0],
+				colour = boardPosition.board[move.toSquare[0]][move.toSquare[1]][1],
+				startMs = pygame.time.get_ticks()
+			))
 
 	# Caching system: At (480px, static), 182.2 mus -> 74.7 mus. 2.44x speedup (1.86x at 960px)
 	# Slower overall for per frame rendering: (480px), 185.1 mus -> 354.4 mus. 1.91x slowdown (2.47x slower at 960px)
-	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection) -> pygame.Surface:
+	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection, hiddenSquares: frozenset[types.Square]) -> pygame.Surface:
 		boardSurface: pygame.Surface = self.backgroundSurface.copy()
 		rect: pygame.Rect
 		sprite: pygame.Surface
@@ -102,7 +129,7 @@ class BoardViewport:
 					if piece == types.Piece.EMPTY:
 						continue
 					sprite = self.getSprite(colour = colour, piece = piece)
-					if selectionState.selectedSquare == types.Square((row, col)) and selectionState.mouseDown == True:
+					if types.Square((row, col)) in hiddenSquares:
 						continue
 					rect = self.getSquareRectAtGamePosition(square = (row, col))
 					# Account for the top bar offset given by our helper
@@ -173,13 +200,18 @@ class BoardViewport:
 		# Try stationary cache first
 		cachedSurface: pygame.Surface
 		boardState: types.Board = boardPosition.board
+		timeNow: int = pygame.time.get_ticks()
+		self.moveAnimations = [anim for anim in self.moveAnimations if timeNow - anim.startMs < anim.durationMs]
 		squareBoundToCursor: types.Square | None = selectionState.selectedSquare if selectionState.mouseDown else None
-		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.selectedSquare != squareBoundToCursor:
+		hiddenSquares: frozenset[types.Square] = frozenset(anim.toSquare for anim in self.moveAnimations)
+		if squareBoundToCursor is not None:
+			hiddenSquares = hiddenSquares | {squareBoundToCursor}
+		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.hiddenSquares != hiddenSquares:
 			# Stationary cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState)
+			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares)
 			self.stationaryBoardCache = types.StationaryBoardCache(
 				surface = cachedSurface,
-				selectedSquare = squareBoundToCursor,
+				hiddenSquares = hiddenSquares,
 				boardState = boardState
 			)
 			# Invalidate highlighted cache when stationary cache is rebuilt
@@ -188,13 +220,21 @@ class BoardViewport:
 		# Try highlighted cache next
 		if self.highlightedBoardCache is None or self.highlightedBoardCache.selectedSquare != selectionState.selectedSquare:
 			# Highlighted cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState)
+			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares)
 			self.highlightedBoardCache = types.HighlightedBoardCache(
 				surface = cachedSurface,
 				selectedSquare = selectionState.selectedSquare,
 				possibleMoves = selectionState.possibleMoves
 			)
 		_ = screen.blit(source = self.highlightedBoardCache.surface, dest = (0, self.layout.topBarPx))
+
+		# Render move animations
+		for anim in self.moveAnimations:
+			t: float = self.BoardAnimations.easeInOutCubic(t = (timeNow - anim.startMs) / anim.durationMs)
+			start: pygame.Vector2 = pygame.Vector2(self.getSquareRectAtGamePosition(square = anim.fromSquare).center)
+			end: pygame.Vector2 = pygame.Vector2(self.getSquareRectAtGamePosition(square = anim.toSquare).center)
+			sprite = self.getSprite(colour = anim.colour, piece = anim.piece)
+			_ = screen.blit(source = sprite, dest = sprite.get_rect(center = start.lerp(end, t)))
 
 		# Render selected piece if dragging
 		if squareBoundToCursor is not None:
