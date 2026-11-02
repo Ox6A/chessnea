@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import pygame
 
 from chessnea.core import types
+from chessnea.rules import legal
 from chessnea.ui import assets, selection, theme
 
 logger: logging.Logger = logging.getLogger(name = __name__)
@@ -40,6 +41,7 @@ class BoardViewport:
 		self.layout: Layout = layout
 		self.sprites: dict[tuple[types.PieceColour, types.Piece], pygame.Surface] = assets.loadSprites(squarePx = self.layout.squarePx)
 		self.backgroundSurface: pygame.Surface = self.createBoardBackgroundSurface()
+		self.checkHighlightSurface: pygame.Surface = self.createCheckHighlightSurface()
 		self.stationaryBoardCache: types.StationaryBoardCache | None = None
 		self.highlightedBoardCache: types.HighlightedBoardCache | None = None
 		self.moveAnimations: list[types.MoveAnimation] = []
@@ -91,6 +93,36 @@ class BoardViewport:
 	def drawSelectedPiece(self, screen: pygame.Surface, sprite: pygame.Surface, mousePosition: tuple[int, int]) -> None:
 		_ = screen.blit(source = sprite, dest = sprite.get_rect(center = mousePosition))
 	
+	def createCheckHighlightSurface(self) -> pygame.Surface:
+		"""Creates a surface to highlight the king in check."""
+		size: int = self.layout.squarePx
+		surface: pygame.Surface = pygame.Surface((size, size), flags = pygame.SRCALPHA)
+		centre: tuple[int, int] = (size // 2, size // 2)
+		maxRadius: int = math.ceil(math.sqrt(2) * size / 2) # distance from centre to corner
+		for radius in range(maxRadius, 0, -1):
+			step: float = radius / maxRadius
+			# colours to blend
+			startColour: tuple[int, int, int, int]
+			endColour: tuple[int, int, int, int]
+			t: float
+			if step <= 0.25:
+				startColour, endColour = theme.SQUARE_HIGHLIGHT_CHECK_CENTRE, theme.SQUARE_HIGHLIGHT_CHECK_INNER
+				t = step / 0.25
+			elif step <= 0.89:
+				startColour, endColour = theme.SQUARE_HIGHLIGHT_CHECK_INNER, theme.SQUARE_HIGHLIGHT_CHECK_OUTER
+				t = (step - 0.25) / (0.89 - 0.25)
+			else:
+				continue
+
+			colour: tuple[int, int, int, int] = (
+				round(number = startColour[0] + (endColour[0] - startColour[0]) * t), # Red channel
+				round(number = startColour[1] + (endColour[1] - startColour[1]) * t), # Green channel
+				round(number = startColour[2] + (endColour[2] - startColour[2]) * t), # Blue channel
+				round(number = startColour[3] + (endColour[3] - startColour[3]) * t) # Alpha channel
+			)
+			_ = pygame.draw.circle(surface = surface, color = colour, center = centre, radius = radius)
+		return surface
+ 
 	class BoardAnimations:
 		@staticmethod
 		def easeInOutCubic(t: float) -> float:
@@ -124,6 +156,12 @@ class BoardViewport:
 		rect: pygame.Rect
 		sprite: pygame.Surface
 		if cacheLevel == types.CacheLevel.STATIONARY:
+			if legal.isKingInCheck(board = boardPosition.board, colour = boardPosition.sideToMove):
+				kingSquare: types.Square | None = legal.findKing(board = boardPosition.board, colour = boardPosition.sideToMove)
+				if kingSquare is not None:
+					rect = self.getSquareRectAtGamePosition(square = kingSquare)
+					rect = rect.move(0, -self.layout.topBarPx)
+					_ = boardSurface.blit(source = self.checkHighlightSurface, dest = rect.topleft)
 			for row, rank in enumerate[tuple[types.BoardSquare, ...]](boardPosition.board):
 				for col, (piece, colour) in enumerate[types.BoardSquare](rank):
 					if piece == types.Piece.EMPTY:
