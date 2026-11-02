@@ -11,7 +11,7 @@ logger: logging.Logger = logging.getLogger(name = __name__)
 
 from chessnea import __version__
 from chessnea.core import fen, types
-from chessnea.rules import moves
+from chessnea.rules import legal, moves
 from chessnea.ui import board
 from chessnea.ui.selection import Selection
 
@@ -100,9 +100,7 @@ class App:
 			event: Pygame event.
 		"""
 		square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
-		fromSquare: types.Square
-		toSquare: types.Square
-		move: types.Move
+		matchedMoveToSquare: types.Move | None
 		possibleMoves: list[types.Move]
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if square is None:
@@ -119,14 +117,11 @@ class App:
 					return
 				elif self.viewport.getBoardSquareAtSquare(square = square, boardPosition = self.boardPosition)[1] != self.boardPosition.sideToMove:
 					logger.debug(msg = f"Input: Putting down piece from {self.selection.selectedSquare} on a different square {square}")
-					fromSquare = self.selection.selectedSquare
-					toSquare = square
-					move = types.Move(fromSquare = fromSquare, toSquare = toSquare)
-					possibleMoves = typing.cast(list[types.Move], self.selection.possibleMoves)
-					if move in possibleMoves:
+					matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = self.selection.selectedSquare, toSquare = square, possibleMoves = self.selection.possibleMoves or [])
+					if matchedMoveToSquare is not None:
 						logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
-						self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
-						self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
+						self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
+						self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = matchedMoveToSquare, boardPosition = self.boardPosition)
 					self.selection.clear()
 					return
 
@@ -138,17 +133,14 @@ class App:
 				logger.debug(msg = f"Input: Mouse click at empty square {square}, no piece to pick up")
 				return
 			logger.debug(msg = f"Input: Picking up {colour.name} {piece.name} at square {square}")
-			possibleMoves = moves.PseudoLegalMoves.movesForPiece(position = self.boardPosition, square = square)
+			possibleMoves = legal.getLegalMovesForPiece(position = self.boardPosition, square = square)
 			self.selection.select(square = square, possibleMoves = possibleMoves, state = types.SelectionState.SELECTED)
 		elif event.type == pygame.MOUSEBUTTONUP:
 			if self.selection.state == types.SelectionState.DRAGGING:
-				fromSquare  = typing.cast(types.Square, self.selection.selectedSquare)
-				toSquare  = typing.cast(types.Square, square)
-				move  = types.Move(fromSquare = fromSquare, toSquare = toSquare)
-				possibleMoves  = typing.cast(list[types.Move], self.selection.possibleMoves)
-				if move in possibleMoves:
+				matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = typing.cast(types.Square, self.selection.selectedSquare), toSquare = typing.cast(types.Square, square), possibleMoves = self.selection.possibleMoves or [])
+				if matchedMoveToSquare is not None:
 					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
-					self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
+					self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
 				self.selection.clear()
 			elif self.selection.deselectPieceOnMouseUp:
 				# No drag started so treat the second click as deselect
@@ -157,6 +149,23 @@ class App:
 			self.selection.mouseDown = False
 		else:
 			return
+
+	def findMatchingMoveWithSquare(self, fromSquare: types.Square, toSquare: types.Square, possibleMoves: list[types.Move], promotionPiece: types.Piece = types.Piece.QUEEN) -> types.Move | None:
+		"""Finds a move in the list of possible moves that matches the given from and to squares.
+
+		Args:
+			fromSquare: The starting square of the move.
+			toSquare: The ending square of the move.
+			possibleMoves: List of possible moves.
+			promotionPiece: The piece to promote to.
+   
+		Returns:
+			The matching move if found, otherwise None.
+		"""
+		for move in possibleMoves:
+			if (move.fromSquare == fromSquare and move.toSquare == toSquare) and (move.promotionPiece is None or move.promotionPiece == promotionPiece):
+				return move
+		return None
 
 def main() -> None:
 	parser: argparse.ArgumentParser = argparse.ArgumentParser(description = "Chessnea", suggest_on_error = True)

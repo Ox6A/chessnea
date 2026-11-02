@@ -246,6 +246,18 @@ def applyMove(position: types.Position, move: types.Move) -> types.Position:
 
 	# Handle square changes
 	castlingRights, boardRows = handleMoveSquareChanges(position = position, boardRows = boardRows, move = move)
+ 
+	# Remove castling rights if a rook is captured on its starting square
+	capturedPiece: types.Piece = position.board[toRow][toCol][0]
+	if capturedPiece == types.Piece.ROOK:
+		if (toRow, toCol) == (7, 0):
+			castlingRights -= {types.CastlingRights.WHITE_QUEENSIDE}
+		elif (toRow, toCol) == (7, 7):
+			castlingRights -= {types.CastlingRights.WHITE_KINGSIDE}
+		elif (toRow, toCol) == (0, 0):
+			castlingRights -= {types.CastlingRights.BLACK_QUEENSIDE}
+		elif (toRow, toCol) == (0, 7):
+			castlingRights -= {types.CastlingRights.BLACK_KINGSIDE}
 
 	# Convert back to tuple
 	newBoard: types.Board = tuple[tuple[types.BoardSquare, ...], ...](map(tuple, boardRows))
