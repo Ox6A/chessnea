@@ -187,10 +187,6 @@ class BoardViewport:
 					dest = rect.topleft,
 					area = rect
 				)
-				# Redraw the check gradient if the selected piece is the king in check
-				selectedPiece: types.Piece = boardPosition.board[selectionState.selectedSquare[0]][selectionState.selectedSquare[1]][0]
-				if selectedPiece == types.Piece.KING and legal.isKingInCheck(board = boardPosition.board, colour = boardPosition.sideToMove):
-					_ = boardSurface.blit(source = self.checkHighlightSurface, dest = rect.topleft)
 	
 				selectedSquareHighlightSurface: pygame.Surface = pygame.Surface(
 					size = rect.size,
@@ -201,6 +197,10 @@ class BoardViewport:
 					source = selectedSquareHighlightSurface,
 					dest = rect.topleft
 				)
+				# Redraw the check gradient on top of the selection if the selected piece is the king in check
+				selectedPiece: types.Piece = boardPosition.board[selectionState.selectedSquare[0]][selectionState.selectedSquare[1]][0]
+				if selectedPiece == types.Piece.KING and legal.isKingInCheck(board = boardPosition.board, colour = boardPosition.sideToMove):
+					_ = boardSurface.blit(source = self.checkHighlightSurface, dest = rect.topleft)
 				if not selectionState.mouseDown:
 					row, col = selectionState.selectedSquare
 					piece, colour = boardPosition.board[row][col]
