@@ -12,7 +12,7 @@ logger: logging.Logger = logging.getLogger(name = __name__)
 from chessnea import __version__
 from chessnea.core import fen, types
 from chessnea.rules import legal, moves
-from chessnea.ui import board
+from chessnea.ui import board, overlay
 from chessnea.ui.selection import Selection
 
 FPS: int = 60
@@ -54,6 +54,8 @@ class App:
 		pygame.display.set_caption("Chessnea")
 		self.boardPosition: types.Position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
 		self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
+		self.gameOverReason: types.GameOverReason | None = None
+		self.gameOverOverlay: overlay.GameOverOverlay | None = None
 		logger.debug(msg = "Init: Starting main loop")
 		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
@@ -89,6 +91,8 @@ class App:
 						mouseDownPosition = None
 			_ = self.screen.fill(color = (255, 255, 255))
 			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition)
+			if self.gameOverOverlay is not None:
+				_ = self.gameOverOverlay.draw(screen = self.screen, mousePosition = mousePosition)
 			pygame.display.flip()
 			_ = clock.tick(FPS)
 
@@ -102,6 +106,12 @@ class App:
 		square: types.Square | None = self.viewport.getSquareAt(mousePosition = mousePosition)
 		matchedMoveToSquare: types.Move | None
 		possibleMoves: list[types.Move]
+  
+		if self.gameOverOverlay is not None:
+			if (event.type == pygame.MOUSEBUTTONDOWN) and (self.gameOverOverlay.newGameButtonRect.collidepoint(mousePosition)):
+					logger.debug(msg = f"Input: Mouse click at {mousePosition} on new game button, starting new game")
+					self.startNewGame()
+			return
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if square is None:
 				logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
@@ -121,6 +131,7 @@ class App:
 					if matchedMoveToSquare is not None:
 						logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
 						self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
+						self.checkGameOver()
 						self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = matchedMoveToSquare, boardPosition = self.boardPosition)
 					self.selection.clear()
 					return
@@ -141,6 +152,7 @@ class App:
 				if matchedMoveToSquare is not None:
 					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
 					self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
+					self.checkGameOver()
 				self.selection.clear()
 			elif self.selection.deselectPieceOnMouseUp:
 				# No drag started so treat the second click as deselect
@@ -166,6 +178,29 @@ class App:
 			if (move.fromSquare == fromSquare and move.toSquare == toSquare) and (move.promotionPiece is None or move.promotionPiece == promotionPiece):
 				return move
 		return None
+
+	def checkGameOver(self) -> None:
+		"""Checks if the game is over and updates the game over state."""
+		self.gameOverReason = legal.getGameOverState(position = self.boardPosition)
+		if self.gameOverReason is None:
+			return
+
+		winner: types.PieceColour | None = None
+		if self.gameOverReason == types.GameOverReason.CHECKMATE:
+			winner = legal.getOpposingColour(colour = self.boardPosition.sideToMove)
+		logger.info(msg = f"Board: Game Over by {self.gameOverReason.name}, winner: {winner.name if winner is not None else 'None'}")
+		icon: pygame.Surface | None = self.viewport.getSprite(colour = winner, piece = types.Piece.KING) if winner is not None else None
+		self.gameOverOverlay = overlay.GameOverOverlay(layout = self.layout, reason = self.gameOverReason, winner = winner, icon = icon)
+  
+	def startNewGame(self) -> None:
+		"""Starts a new game.."""
+		logger.info(msg = "Board: Starting new game")
+		_ = pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+		self.boardPosition = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
+		self.selection.clear()
+		self.gameOverReason = None
+		self.gameOverOverlay = None
+			
 
 def main() -> None:
 	parser: argparse.ArgumentParser = argparse.ArgumentParser(description = "Chessnea", suggest_on_error = True)

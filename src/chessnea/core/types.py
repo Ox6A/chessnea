@@ -202,3 +202,11 @@ class MoveAnimation:
 	colour: PieceColour
 	startMs: int
 	durationMs: int = 200
+ 
+class GameOverReason(IntEnum):
+	"""Represents the reason for game over."""
+	CHECKMATE = 0
+	STALEMATE = 1
+	INSUFFICIENT_MATERIAL = 2
+	FIFTY_MOVE_RULE = 3
+	THREEFOLD_REPETITION = 4

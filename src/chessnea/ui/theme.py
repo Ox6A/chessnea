@@ -7,6 +7,19 @@ PIECE_SET_IDENTIFIER: str = "cburnett"
 ASSETS_DIR: Path = Path(__file__).parent.parent.parent.parent / "assets"
 ASSETS_PIECE_SET_DIR: Path = ASSETS_DIR / "pieces" / PIECE_SET_IDENTIFIER
 
+FONTS_DIR: Path = ASSETS_DIR / "fonts" / "Roboto"
+FONT_BOLD: Path = FONTS_DIR / "Roboto-Bold.ttf"
+FONT_REGULAR: Path = FONTS_DIR / "Roboto-Regular.ttf"
+
+OVERLAY_DIM: tuple[int, int, int, int] = (0, 0, 0, 140)
+PANEL_COLOUR: tuple[int, int, int] = (48, 46, 43)
+PANEL_BUTTON_COLOUR: tuple[int, int, int] = (70, 68, 65)
+PANEL_BUTTON_HOVER_COLOUR: tuple[int, int, int] = (88, 85, 81)
+PANEL_SHADOW_COLOUR: tuple[int, int, int, int] = (0, 0, 0, 200)
+PANEL_BORDER_COLOUR: tuple[int, int, int] = (80, 78, 74)
+TEXT_PRIMARY_COLOUR: tuple[int, int, int] = (255, 255, 255)
+TEXT_SECONDARY_COLOUR: tuple[int, int, int] = (186, 186, 186)
+
 # Lichess brown board: https://github.com/lichess-org/lila/blob/master/public/images/board/brown.png
 SQUARE_WHITE: tuple[int, int, int] = (240, 217, 181)
 SQUARE_BLACK: tuple[int, int, int] = (181, 136, 99)

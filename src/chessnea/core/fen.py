@@ -3,12 +3,13 @@ import logging
 
 from chessnea.core import types
 
-FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#FEN_STARTING_POSITION: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+FEN_STARTING_POSITION: str = "6k1/5ppp/p7/P7/5b2/7P/1r3PP1/3R2K1 w - - 0 1"
 FEN_VALID_PIECE_CHARACTERS: str = "rnbqkpRNBQKP"
 FEN_VALID_EMPTY_SQUARE_CHARACTERS: str = "12345678"
 FEN_VALID_BOARD_CHARACTERS: str = FEN_VALID_PIECE_CHARACTERS + FEN_VALID_EMPTY_SQUARE_CHARACTERS
 
-logger: logging.Logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(name = __name__)
 
 def parseFENCoordinatesToBoardCoordinates(file: str, rank: str) -> types.Square:
 	# Convert FEN coordinates into our internal representation

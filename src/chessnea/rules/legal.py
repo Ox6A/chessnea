@@ -166,3 +166,23 @@ def getAllLegalMoves(position: types.Position) -> list[types.Move]:
 				square: types.Square = (row, col)
 				legalMoves.extend(getLegalMovesForPiece(position = position, square = square))
 	return legalMoves
+
+def getGameOverState(position: types.Position) -> types.GameOverReason | None:
+	"""Returns the game over reason if the game is over, otherwise returns None.
+	
+	Args:
+		position (types.Position): The current position of the game.
+
+	Returns:
+		types.GameOverReason | None: The game over reason if the game is over, otherwise None.
+	"""
+ 
+	# Only checkmate and stalemate is implemented
+	
+	legalMoves: list[types.Move] = getAllLegalMoves(position = position)
+	if len(legalMoves) == 0:
+		if isKingInCheck(board = position.board, colour = position.sideToMove):
+			return types.GameOverReason.CHECKMATE
+		else:
+			return types.GameOverReason.STALEMATE
+	return None
