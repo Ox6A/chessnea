@@ -150,7 +150,7 @@ class App:
 				matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = typing.cast(types.Square, self.selection.selectedSquare), toSquare = typing.cast(types.Square, square), possibleMoves = self.selection.possibleMoves or [])
 				if matchedMoveToSquare is not None:
 					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
-					self.playMove(move = matchedMoveToSquare, animate = True)
+					self.playMove(move = matchedMoveToSquare)
 				self.selection.clear()
 			elif self.selection.deselectPieceOnMouseUp:
 				# No drag started so treat the second click as deselect
