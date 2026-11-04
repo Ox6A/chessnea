@@ -56,6 +56,7 @@ class App:
 		self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
 		self.gameOverReason: types.GameOverReason | None = None
 		self.gameOverOverlay: overlay.GameOverOverlay | None = None
+		self.positionHistory: list[types.PositionIdentifier] = [legal.returnPositionIdentifierFromPosition(position = self.boardPosition)]
 		logger.debug(msg = "Init: Starting main loop")
 		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
@@ -130,9 +131,7 @@ class App:
 					matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = self.selection.selectedSquare, toSquare = square, possibleMoves = self.selection.possibleMoves or [])
 					if matchedMoveToSquare is not None:
 						logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
-						self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
-						self.checkGameOver()
-						self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = matchedMoveToSquare, boardPosition = self.boardPosition)
+						self.playMove(move = matchedMoveToSquare, animate = True)
 					self.selection.clear()
 					return
 
@@ -151,8 +150,7 @@ class App:
 				matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = typing.cast(types.Square, self.selection.selectedSquare), toSquare = typing.cast(types.Square, square), possibleMoves = self.selection.possibleMoves or [])
 				if matchedMoveToSquare is not None:
 					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")
-					self.boardPosition = moves.applyMove(position = self.boardPosition, move = matchedMoveToSquare)
-					self.checkGameOver()
+					self.playMove(move = matchedMoveToSquare, animate = True)
 				self.selection.clear()
 			elif self.selection.deselectPieceOnMouseUp:
 				# No drag started so treat the second click as deselect
@@ -179,9 +177,22 @@ class App:
 				return move
 		return None
 
+	def playMove(self, move: types.Move, animate: bool = False) -> None:
+		"""Plays a move on the board.
+
+		Args:
+			move: The move to play.
+			animate: Whether to animate the move.
+		"""
+		self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
+		self.positionHistory.append(legal.returnPositionIdentifierFromPosition(position = self.boardPosition))
+		if animate:
+			self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
+		self.checkGameOver()
+
 	def checkGameOver(self) -> None:
 		"""Checks if the game is over and updates the game over state."""
-		self.gameOverReason = legal.getGameOverState(position = self.boardPosition)
+		self.gameOverReason = legal.getGameOverState(position = self.boardPosition, positionHistory = self.positionHistory)
 		if self.gameOverReason is None:
 			return
 
@@ -197,6 +208,7 @@ class App:
 		logger.info(msg = "Board: Starting new game")
 		_ = pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 		self.boardPosition = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
+		self.positionHistory = [legal.returnPositionIdentifierFromPosition(position = self.boardPosition)]
 		self.selection.clear()
 		self.gameOverReason = None
 		self.gameOverOverlay = None

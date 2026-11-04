@@ -2,18 +2,18 @@
 
 from dataclasses import dataclass
 
-from chessnea.core.types import Move, SelectionState, Square
+from chessnea.core import types
 
 
 @dataclass
 class Selection:
-	state: SelectionState = SelectionState.NONE
-	selectedSquare: Square | None = None
-	possibleMoves: list[Move] | None = None
+	state: types.SelectionState = types.SelectionState.NONE
+	selectedSquare: types.Square | None = None
+	possibleMoves: list[types.Move] | None = None
 	mouseDown: bool = False
 	deselectPieceOnMouseUp: bool = False
 
-	def select(self, square: Square, possibleMoves: list[Move], state: SelectionState) -> None:
+	def select(self, square: types.Square, possibleMoves: list[types.Move], state: types.SelectionState) -> None:
 		"""Updates the selection state with the given square, possible moves, and dragging status.
 
 		Args:
@@ -29,7 +29,7 @@ class Selection:
 	
 	def clear(self) -> None:
 		"""Clears the selection state."""
-		self.state = SelectionState.NONE
+		self.state = types.SelectionState.NONE
 		self.selectedSquare = None
 		self.possibleMoves = None
 		self.mouseDown = False

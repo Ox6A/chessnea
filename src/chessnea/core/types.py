@@ -83,6 +83,9 @@ class Position:
 	fiftyMoveCounter: int
 	fullMoveCounter: int
 
+PositionIdentifier: typing.TypeAlias = tuple[Board, PieceColour, frozenset[CastlingRights], Square | None]
+"""A unique identifier for a position used for threefold repetition detection."""
+
 class PieceToFEN:
 	"""Converts a types.Piece type to a FEN compatible string.
 

@@ -167,7 +167,40 @@ def getAllLegalMoves(position: types.Position) -> list[types.Move]:
 				legalMoves.extend(getLegalMovesForPiece(position = position, square = square))
 	return legalMoves
 
-def getGameOverState(position: types.Position) -> types.GameOverReason | None:
+def returnPositionIdentifierFromPosition(position: types.Position) -> types.PositionIdentifier:
+	"""Returns a unique identifier for the given position used for threefold repetition detection."""
+	return (position.board, position.sideToMove, position.castlingRights, position.enPassantTargettableSquare)
+
+def checkInsufficientMaterial(board: types.Board) -> bool:
+	"""Checks if the game is a draw due to insufficient material."""
+	# Count pieces
+	pieceCount: dict[types.Piece, int] = {piece: 0 for piece in types.Piece}
+	for row in board:
+		for square in row:
+			piece, _ = square
+			if piece != types.Piece.EMPTY:
+				pieceCount[piece] += 1
+
+	# Check for insufficient material conditions
+	if pieceCount[types.Piece.PAWN] > 0 or pieceCount[types.Piece.ROOK] > 0 or pieceCount[types.Piece.QUEEN] > 0:
+		return False
+	pieceCount2: int = pieceCount[types.Piece.BISHOP] + pieceCount[types.Piece.KNIGHT]
+	# King vs king or king and 1 bishop or knight vs king is insufficient material
+	if pieceCount2 <= 1:
+		return True
+	# Only bishops remain so we check if they are on the same colour
+	if pieceCount[types.Piece.KNIGHT] == 0:
+		bishopSquareColours: set[int] = set()
+		for row in range(8):
+			for col in range(8):
+				piece, _ = board[row][col]
+				if piece == types.Piece.BISHOP:
+					bishopSquareColours.add((row + col) % 2)
+		if len(bishopSquareColours) == 1:
+			return True
+	return False
+
+def getGameOverState(position: types.Position, positionHistory: list[types.PositionIdentifier]) -> types.GameOverReason | None:
 	"""Returns the game over reason if the game is over, otherwise returns None.
 	
 	Args:
@@ -185,4 +218,10 @@ def getGameOverState(position: types.Position) -> types.GameOverReason | None:
 			return types.GameOverReason.CHECKMATE
 		else:
 			return types.GameOverReason.STALEMATE
+	if checkInsufficientMaterial(board = position.board):
+		return types.GameOverReason.INSUFFICIENT_MATERIAL
+	if position.fiftyMoveCounter >= 100:
+		return types.GameOverReason.FIFTY_MOVE_RULE
+	if positionHistory.count(returnPositionIdentifierFromPosition(position = position)) >= 3:
+		return types.GameOverReason.THREEFOLD_REPETITION
 	return None

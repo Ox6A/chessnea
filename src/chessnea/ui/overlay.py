@@ -17,9 +17,18 @@ class GameOverOverlay:
 		if reason == types.GameOverReason.CHECKMATE:
 			title = "Checkmate"
 			subtitle = f"{winnerName} wins!"
-		else:
+		elif reason == types.GameOverReason.STALEMATE:
 			title = "Stalemate"
 			subtitle = "Draw!"
+		elif reason == types.GameOverReason.INSUFFICIENT_MATERIAL:
+			title = "Draw"
+			subtitle = "Insufficient material!"
+		elif reason == types.GameOverReason.FIFTY_MOVE_RULE:
+			title = "Draw"
+			subtitle = "Fifty-move rule!"
+		elif reason == types.GameOverReason.THREEFOLD_REPETITION:
+			title = "Draw"
+			subtitle = "Threefold repetition!"
 
 		panelRect: pygame.Rect = pygame.Rect(0, 0, layout.boardPx // 2, layout.boardPx // 3)
 		panelRect.center = (layout.window[0] // 2, layout.window[1] // 2)
