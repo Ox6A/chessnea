@@ -34,7 +34,6 @@ class Clock:
             types.PieceColour.BLACK: float(self.startingTime)
         }
         self.isRunning = False
-        self.lastUpdate = 0.0
         self.lastUpdate = time.monotonic()
 
     def setClockState(self, isRunning: bool) -> None:
@@ -95,7 +94,7 @@ class Clock:
         timeRemaining: float = self.timeRemaining[sideToMove]
         if timeRemaining < 10:
             hundredths: int = math.floor(timeRemaining * 100)
-            return f"0{hundredths // 10:2d}.{hundredths % 10}"
+            return f"{hundredths // 100:02d}.{hundredths % 100:02d}"
         totalSeconds = math.ceil(self.timeRemaining[sideToMove])
         minutes = totalSeconds // 60
         seconds = totalSeconds % 60

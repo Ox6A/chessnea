@@ -11,8 +11,8 @@ class GameOverOverlay:
 	def __init__(self, layout: board.Layout, reason: types.GameOverReason, winner: types.PieceColour | None = None, icon: pygame.Surface | None = None) -> None:
 		self.surface: pygame.Surface = pygame.Surface(size = layout.window, flags = pygame.SRCALPHA)
 		_ = self.surface.fill(color = theme.OVERLAY_DIM)
-		title: str
-		subtitle: str
+		title: str = ""
+		subtitle: str = ""
 		winnerName: str = winner.name.capitalize() if winner is not None else ""
 		if reason == types.GameOverReason.CHECKMATE:
 			title = "Checkmate"
@@ -29,6 +29,9 @@ class GameOverOverlay:
 		elif reason == types.GameOverReason.THREEFOLD_REPETITION:
 			title = "Draw"
 			subtitle = "Threefold repetition!"
+		elif reason == types.GameOverReason.TIMEOUT:
+			title = "Timeout"
+			subtitle = f"{winnerName} wins!"
 
 		panelRect: pygame.Rect = pygame.Rect(0, 0, layout.boardPx // 2, layout.boardPx // 3)
 		panelRect.center = (layout.window[0] // 2, layout.window[1] // 2)

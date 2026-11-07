@@ -8,7 +8,7 @@
 A chess game, written in Python with the `pygame-ce` library, for my A-Level OCR Computer Science NEA.
 
 ## Requirements
-- Python 3.10 or newer
+- Python 3.14 or newer
 - Git, or download a `.zip` of the source code
 - `pygame-ce` package
 

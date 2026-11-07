@@ -63,7 +63,7 @@ class CastlingRights(IntEnum):
 	BLACK_KINGSIDE = 2
 	BLACK_QUEENSIDE = 3
 
-@dataclass(slots = True)
+@dataclass(slots = True, frozen = True)
 class Position:
 	"""A snapshot of the board state.
 
@@ -215,6 +215,7 @@ class GameOverReason(IntEnum):
 	INSUFFICIENT_MATERIAL = 2
 	FIFTY_MOVE_RULE = 3
 	THREEFOLD_REPETITION = 4
+	TIMEOUT = 5
  
 @dataclass(frozen = True, slots = True)
 class HistoryEntry:
@@ -223,6 +224,8 @@ class HistoryEntry:
 	Attributes:
 		position (Position): The position at this point in the game.
 		move (Move | None): The move that led to this position.
+		clockTimes (dict[PieceColour, float] | None): The clock times for both players at this point in the game.
 	"""
 	position: Position
 	move: Move | None = None
+	clockTimes: dict[PieceColour, float] | None = None

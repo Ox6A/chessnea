@@ -10,9 +10,9 @@ import pygame
 logger: logging.Logger = logging.getLogger(name = __name__)
 
 from chessnea import __version__
-from chessnea.core import fen, types
+from chessnea.core import clock, fen, types
 from chessnea.rules import legal, moves
-from chessnea.ui import board, overlay
+from chessnea.ui import bar, board, overlay
 from chessnea.ui.selection import Selection
 
 FPS: int = 60
@@ -37,7 +37,7 @@ class App:
 
 		# Initialise pygame window
 		_ = pygame.init()
-		clock: pygame.Clock = pygame.Clock()
+		pygameclock: pygame.Clock = pygame.Clock()
 
 		# Derive board size from command-line argument if passed, or auto-scale to display resolution
 		boardPx: int
@@ -56,11 +56,15 @@ class App:
 		self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
 		self.gameOverReason: types.GameOverReason | None = None
 		self.gameOverOverlay: overlay.GameOverOverlay | None = None
+		self.clock: clock.Clock = clock.Clock()
+		self.topBar: bar.Bar = bar.Bar(layout = self.layout, padLeftLabels = ["Menu"], padRightLabels = ["Exit", "Undo"])
 		logger.debug(msg = "Init: Starting main loop")
 		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
 
 		pos: tuple[int, int]
+		key: int
+		modifiers: int
 		button: int
 		while running:
 			mousePosition: tuple[int, int] = pygame.mouse.get_pos()
@@ -70,7 +74,10 @@ class App:
 				elif event.type == pygame.MOUSEBUTTONDOWN:
 					button = typing.cast(int, event.button)
 					pos = typing.cast(tuple[int, int], event.pos)
-					if button == 1:
+					if button == 1 and self.topBar.rect.collidepoint(pos):
+						box = self.topBar.getButtonAtPos(mousePosition = pos)
+						running = self.handleTopBarClick(label = box.label if box is not None else None)
+					elif button == 1:
 						self.handleMouseEvent(mousePosition = pos, event = event)
 						if self.selection.selectedSquare is not None:
 							mouseDownPosition = pos
@@ -89,12 +96,20 @@ class App:
 					if button == 1:
 						self.handleMouseEvent(mousePosition = pos, event = event)
 						mouseDownPosition = None
+				elif event.type == pygame.KEYDOWN:
+					key = typing.cast(int, event.key)
+					modifiers = typing.cast(int, event.mod)
+					if key == pygame.K_z and (modifiers & pygame.KMOD_CTRL):
+						self.undoMove(plies = 1)
+			if self.gameOverReason is None and self.clock.updateClock(sideToMove = self.boardPosition.sideToMove):
+				self.checkGameOver(timeOut = True)
 			_ = self.screen.fill(color = (255, 255, 255))
 			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition, lastMove = self.lastMove)
 			if self.gameOverOverlay is not None:
 				_ = self.gameOverOverlay.draw(screen = self.screen, mousePosition = mousePosition)
+			self.topBar.draw(screen = self.screen, mousePosition = mousePosition, clock = self.clock, sideToMove = self.boardPosition.sideToMove, clockEnabled = self.gameOverReason is None)
 			pygame.display.flip()
-			_ = clock.tick(FPS)
+			_ = pygameclock.tick(FPS)
 
 	@property
 	def boardPosition(self) -> types.Position:
@@ -171,6 +186,27 @@ class App:
 		else:
 			return
 
+	def handleTopBarClick(self, label: str | None) -> bool:
+		"""Handles clicks on the top bar buttons.
+
+		Args:
+			label: The label of the button that was clicked.
+
+		Returns:
+			True if the application should continue running, False if it should exit.
+		"""
+		if label is None:
+			return True
+		logger.debug(msg = f"Input: Top bar button '{label}' clicked")
+		if label == "Exit":
+			logger.info(msg = "Input: Exiting application")
+			return False
+		elif label == "Undo":
+			self.undoMove(plies = 1)
+		elif label == "Menu":
+			logger.info(msg = "Input: Menu button clicked")
+		return True
+
 	def findMatchingMoveWithSquare(self, fromSquare: types.Square, toSquare: types.Square, possibleMoves: list[types.Move], promotionPiece: types.Piece = types.Piece.QUEEN) -> types.Move | None:
 		"""Finds a move in the list of possible moves that matches the given from and to squares.
 
@@ -195,21 +231,59 @@ class App:
 			move: The move to play.
 			animate: Whether to animate the move.
 		"""
+		moveColour: types.PieceColour = self.boardPosition.sideToMove
+		if self.clock.updateClock(sideToMove = moveColour):
+			self.checkGameOver(timeOut = True)
+			return
 		newPosition: types.Position = moves.applyMove(position = self.boardPosition, move = move)
-		self.history.append(types.HistoryEntry(position = newPosition, move = move))
+		self.clock.applyClockIncrement(sideToMove = moveColour)
+		if not self.clock.isRunning:
+			self.clock.setClockState(isRunning = True)
+		self.history.append(types.HistoryEntry(position = newPosition, move = move, clockTimes = self.clock.timeRemaining.copy()))
 		if animate:
 			self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
 		self.checkGameOver()
 
-	def checkGameOver(self) -> None:
+	def undoMove(self, plies: int = 1) -> None:
+		"""Undoes the last move(s) played.
+
+		Args:
+			plies: The number of plies (half-moves) to undo.
+		"""
+		totalMoves: int = len(self.history) - 1
+		if totalMoves < plies:
+			logger.warning(msg = f"Board: Attempted to undo {plies} plies, but only {totalMoves} moves have been played")
+			return 
+		for _ in range(plies):
+			_ = self.history.pop()
+		logger.info(msg = f"Board: Undid {plies} plies")
+
+		# Resync UI state with the new board position
+		self.viewport.moveAnimations = []
+		self.selection.clear()
+		self.gameOverOverlay = None
+		self.gameOverReason = None
+		_ = pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+		previousEntry: types.HistoryEntry = self.history[-1]
+		if previousEntry.clockTimes is None:
+			self.clock.resetClock()
+		else:
+			self.clock.timeRemaining = previousEntry.clockTimes.copy()
+			if not self.clock.isRunning:
+				self.clock.setClockState(isRunning = True)
+
+	def checkGameOver(self, timeOut: bool = False) -> None:
 		"""Checks if the game is over and updates the game over state."""
-		positionHistory: list[types.PositionIdentifier] = [legal.returnPositionIdentifierFromPosition(position = entry.position) for entry in self.history]
-		self.gameOverReason = legal.getGameOverState(position = self.boardPosition, positionHistory = positionHistory)
+		if timeOut:
+			self.gameOverReason = types.GameOverReason.TIMEOUT
+		else:
+			positionHistory: list[types.PositionIdentifier] = [legal.returnPositionIdentifierFromPosition(position = entry.position) for entry in self.history]
+			self.gameOverReason = legal.getGameOverState(position = self.boardPosition, positionHistory = positionHistory)
 		if self.gameOverReason is None:
 			return
-
+		self.clock.setClockState(isRunning = False)
 		winner: types.PieceColour | None = None
-		if self.gameOverReason == types.GameOverReason.CHECKMATE:
+		if self.gameOverReason in (types.GameOverReason.CHECKMATE, types.GameOverReason.TIMEOUT):
 			winner = legal.getOpposingColour(colour = self.boardPosition.sideToMove)
 		logger.info(msg = f"Board: Game Over by {self.gameOverReason.name}, winner: {winner.name if winner is not None else 'None'}")
 		icon: pygame.Surface | None = self.viewport.getSprite(colour = winner, piece = types.Piece.KING) if winner is not None else None
@@ -224,6 +298,7 @@ class App:
 		self.selection.clear()
 		self.gameOverReason = None
 		self.gameOverOverlay = None
+		self.clock.resetClock()
 			
 
 def main() -> None:

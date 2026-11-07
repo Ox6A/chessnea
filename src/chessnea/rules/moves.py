@@ -262,11 +262,14 @@ def applyMove(position: types.Position, move: types.Move) -> types.Position:
 	# Convert back to tuple
 	newBoard: types.Board = tuple[tuple[types.BoardSquare, ...], ...](map(tuple, boardRows))
 
-	# Reset en passant target square if the move is a pawn double move else set it to None
+	# Set the en passant target square only if the move is a pawn double move with an enemy pawn beside it
 	enPassantTargettableSquare: types.Square | None = None
 	if pieceFrom == types.Piece.PAWN and abs(fromRow - toRow) == 2:
-		direction: int = -1 if colourFrom == types.PieceColour.WHITE else 1
-		enPassantTargettableSquare = (fromRow + direction, fromCol)
+		enemyPawn: types.BoardSquare = (types.Piece.PAWN, types.PieceColour.BLACK if colourFrom == types.PieceColour.WHITE else types.PieceColour.WHITE)
+		for neighbourCol in (toCol - 1, toCol + 1):
+			if 0 <= neighbourCol <= 7 and newBoard[toRow][neighbourCol] == enemyPawn:
+				direction: int = -1 if colourFrom == types.PieceColour.WHITE else 1
+				enPassantTargettableSquare = (fromRow + direction, fromCol)
 
 	# Reset the fifty move counter if the move is a pawn move or a capture
 	fiftyMoveCounter: int = position.fiftyMoveCounter + 1 if pieceFrom != types.Piece.PAWN and position.board[toRow][toCol][0] == types.Piece.EMPTY else 0
