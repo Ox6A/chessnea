@@ -10,6 +10,7 @@ ASSETS_PIECE_SET_DIR: Path = ASSETS_DIR / "pieces" / PIECE_SET_IDENTIFIER
 FONTS_DIR: Path = ASSETS_DIR / "fonts" / "Roboto"
 FONT_BOLD: Path = FONTS_DIR / "Roboto-Bold.ttf"
 FONT_REGULAR: Path = FONTS_DIR / "Roboto-Regular.ttf"
+FONT_MEDIUM: Path = FONTS_DIR / "Roboto-Medium.ttf"
 
 OVERLAY_DIM: tuple[int, int, int, int] = (0, 0, 0, 140)
 PANEL_COLOUR: tuple[int, int, int] = (48, 46, 43)
@@ -19,6 +20,13 @@ PANEL_SHADOW_COLOUR: tuple[int, int, int, int] = (0, 0, 0, 200)
 PANEL_BORDER_COLOUR: tuple[int, int, int] = (80, 78, 74)
 TEXT_PRIMARY_COLOUR: tuple[int, int, int] = (255, 255, 255)
 TEXT_SECONDARY_COLOUR: tuple[int, int, int] = (186, 186, 186)
+TEXT_DISABLED_COLOUR: tuple[int, int, int] = (137, 137, 137)
+
+# Taken from main's Material Design dark palette
+BAR_COLOUR: tuple[int, int, int] = (18, 18, 18)
+BAR_OUTLINE_COLOUR: tuple[int, int, int] = (180, 180, 180)
+BAR_BUTTON_HOVER_COLOUR: tuple[int, int, int] = (37, 37, 37)
+BAR_BUTTON_PRESSED_COLOUR: tuple[int, int, int] = (56, 56, 56)
 
 # Lichess brown board: https://github.com/lichess-org/lila/blob/master/public/images/board/brown.png
 SQUARE_WHITE: tuple[int, int, int] = (240, 217, 181)

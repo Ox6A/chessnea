@@ -170,11 +170,13 @@ class StationaryBoardCache:
 		surface: Surface for the entire board.
 		hiddenSquares: Set of squares that are hidden.
 		boardState: Board state used for the current cached board.
+		lastMove: Last move used for last move highlighting.
 	"""
 
 	surface: pygame.Surface
 	hiddenSquares: frozenset[Square]
 	boardState: Board
+	lastMove: Move | None
 
 @dataclass(frozen = True, slots = True)
 class HighlightedBoardCache:
@@ -213,3 +215,14 @@ class GameOverReason(IntEnum):
 	INSUFFICIENT_MATERIAL = 2
 	FIFTY_MOVE_RULE = 3
 	THREEFOLD_REPETITION = 4
+ 
+@dataclass(frozen = True, slots = True)
+class HistoryEntry:
+	"""Represents a single entry in the position history.
+
+	Attributes:
+		position (Position): The position at this point in the game.
+		move (Move | None): The move that led to this position.
+	"""
+	position: Position
+	move: Move | None = None

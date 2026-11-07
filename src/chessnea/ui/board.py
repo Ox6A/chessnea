@@ -13,7 +13,7 @@ from chessnea.ui import assets, selection, theme
 logger: logging.Logger = logging.getLogger(name = __name__)
 
 MIN_BOARD_PX: int = 480
-TOP_BAR_PX_FACTOR: float = 0 # Standard factor is 1/16
+TOP_BAR_PX_FACTOR: float = 1/16 # Standard factor is 1/16
 BOARD_TO_RESOLUTION_FACTOR: float = 0.8 # 80% of screen width/height is used
 
 @dataclass(frozen = True)
@@ -45,6 +45,8 @@ class BoardViewport:
 		self.stationaryBoardCache: types.StationaryBoardCache | None = None
 		self.highlightedBoardCache: types.HighlightedBoardCache | None = None
 		self.moveAnimations: list[types.MoveAnimation] = []
+		self.lastMoveHighlightSurface: pygame.Surface = pygame.Surface((self.layout.squarePx, self.layout.squarePx), flags = pygame.SRCALPHA)
+		_ = self.lastMoveHighlightSurface.fill(color = theme.SQUARE_HIGHLIGHT_LAST_MOVE)
 
 	def createBoardBackgroundSurface(self) -> pygame.Surface:
 		surface: pygame.Surface = pygame.Surface((self.layout.boardPx, self.layout.boardPx))
@@ -151,11 +153,17 @@ class BoardViewport:
 
 	# Caching system: At (480px, static), 182.2 mus -> 74.7 mus. 2.44x speedup (1.86x at 960px)
 	# Slower overall for per frame rendering: (480px), 185.1 mus -> 354.4 mus. 1.91x slowdown (2.47x slower at 960px)
-	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection, hiddenSquares: frozenset[types.Square]) -> pygame.Surface:
+	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection, hiddenSquares: frozenset[types.Square], lastMove: types.Move | None) -> pygame.Surface:
 		boardSurface: pygame.Surface = self.backgroundSurface.copy()
 		rect: pygame.Rect
 		sprite: pygame.Surface
 		if cacheLevel == types.CacheLevel.STATIONARY:
+			# Highlight the squares the last move was played from and to, before the check gradient so it stays on top
+			if lastMove is not None:
+				for square in (lastMove.fromSquare, lastMove.toSquare):
+					rect = self.getSquareRectAtGamePosition(square = square)
+					rect = rect.move(0, -self.layout.topBarPx)
+					_ = boardSurface.blit(source = self.lastMoveHighlightSurface, dest = rect.topleft)
 			if legal.isKingInCheck(board = boardPosition.board, colour = boardPosition.sideToMove):
 				kingSquare: types.Square | None = legal.findKing(board = boardPosition.board, colour = boardPosition.sideToMove)
 				if kingSquare is not None:
@@ -237,7 +245,7 @@ class BoardViewport:
 		return boardSurface
 
 	
-	def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int]) -> None:
+	def renderBoard(self, screen: pygame.Surface, boardPosition: types.Position, selectionState: selection.Selection, mousePosition: tuple[int, int], lastMove: types.Move | None) -> None:
 		# We use 2 levels of cache in order to optimise rendering as much as possible.
 		# Try stationary cache first
 		cachedSurface: pygame.Surface
@@ -248,13 +256,14 @@ class BoardViewport:
 		hiddenSquares: frozenset[types.Square] = frozenset(anim.toSquare for anim in self.moveAnimations)
 		if squareBoundToCursor is not None:
 			hiddenSquares = hiddenSquares | {squareBoundToCursor}
-		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.hiddenSquares != hiddenSquares:
+		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.hiddenSquares != hiddenSquares or self.stationaryBoardCache.lastMove != lastMove:
 			# Stationary cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares)
+			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
 			self.stationaryBoardCache = types.StationaryBoardCache(
 				surface = cachedSurface,
 				hiddenSquares = hiddenSquares,
-				boardState = boardState
+				boardState = boardState,
+				lastMove = lastMove
 			)
 			# Invalidate highlighted cache when stationary cache is rebuilt
 			self.highlightedBoardCache = None
@@ -262,7 +271,7 @@ class BoardViewport:
 		# Try highlighted cache next
 		if self.highlightedBoardCache is None or self.highlightedBoardCache.selectedSquare != selectionState.selectedSquare:
 			# Highlighted cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares)
+			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
 			self.highlightedBoardCache = types.HighlightedBoardCache(
 				surface = cachedSurface,
 				selectedSquare = selectionState.selectedSquare,

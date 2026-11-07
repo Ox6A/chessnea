@@ -52,11 +52,10 @@ class App:
 		self.selection: Selection = Selection()
 		logger.info(msg = f"Init: Display created with configuration: {self.layout.boardPx}x{self.layout.boardPx + self.layout.topBarPx}px window, with {self.layout.squarePx}px squares")
 		pygame.display.set_caption("Chessnea")
-		self.boardPosition: types.Position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
+		self.history: list[types.HistoryEntry] = [types.HistoryEntry(position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION))]
 		self.viewport: board.BoardViewport = board.BoardViewport(layout = self.layout)
 		self.gameOverReason: types.GameOverReason | None = None
 		self.gameOverOverlay: overlay.GameOverOverlay | None = None
-		self.positionHistory: list[types.PositionIdentifier] = [legal.returnPositionIdentifierFromPosition(position = self.boardPosition)]
 		logger.debug(msg = "Init: Starting main loop")
 		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
@@ -91,12 +90,24 @@ class App:
 						self.handleMouseEvent(mousePosition = pos, event = event)
 						mouseDownPosition = None
 			_ = self.screen.fill(color = (255, 255, 255))
-			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition)
+			_ = self.viewport.renderBoard(screen = self.screen, boardPosition = self.boardPosition, selectionState = self.selection, mousePosition = mousePosition, lastMove = self.lastMove)
 			if self.gameOverOverlay is not None:
 				_ = self.gameOverOverlay.draw(screen = self.screen, mousePosition = mousePosition)
 			pygame.display.flip()
 			_ = clock.tick(FPS)
 
+	@property
+	def boardPosition(self) -> types.Position:
+		"""Returns the current board position."""
+		return self.history[-1].position
+
+	@property
+	def lastMove(self) -> types.Move | None:
+		"""Returns the last move played, or None if no moves have been played."""
+		if len(self.history) < 2:
+			return None
+		return self.history[-1].move
+	
 	def handleMouseEvent(self, mousePosition: tuple[int, int], event: pygame.event.Event) -> None:
 		"""Handles mouse clicks within the UI.
 
@@ -184,15 +195,16 @@ class App:
 			move: The move to play.
 			animate: Whether to animate the move.
 		"""
-		self.boardPosition = moves.applyMove(position = self.boardPosition, move = move)
-		self.positionHistory.append(legal.returnPositionIdentifierFromPosition(position = self.boardPosition))
+		newPosition: types.Position = moves.applyMove(position = self.boardPosition, move = move)
+		self.history.append(types.HistoryEntry(position = newPosition, move = move))
 		if animate:
 			self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
 		self.checkGameOver()
 
 	def checkGameOver(self) -> None:
 		"""Checks if the game is over and updates the game over state."""
-		self.gameOverReason = legal.getGameOverState(position = self.boardPosition, positionHistory = self.positionHistory)
+		positionHistory: list[types.PositionIdentifier] = [legal.returnPositionIdentifierFromPosition(position = entry.position) for entry in self.history]
+		self.gameOverReason = legal.getGameOverState(position = self.boardPosition, positionHistory = positionHistory)
 		if self.gameOverReason is None:
 			return
 
@@ -207,8 +219,8 @@ class App:
 		"""Starts a new game.."""
 		logger.info(msg = "Board: Starting new game")
 		_ = pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-		self.boardPosition = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION)
-		self.positionHistory = [legal.returnPositionIdentifierFromPosition(position = self.boardPosition)]
+		self.history = [types.HistoryEntry(position = fen.importFENToPositionObject(fen = fen.FEN_STARTING_POSITION))]
+		self.viewport.moveAnimations = []
 		self.selection.clear()
 		self.gameOverReason = None
 		self.gameOverOverlay = None
