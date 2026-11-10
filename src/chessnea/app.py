@@ -7,13 +7,13 @@ from os import environ
 
 import pygame
 
-logger: logging.Logger = logging.getLogger(name = __name__)
-
 from chessnea import __version__
 from chessnea.core import clock, fen, types
 from chessnea.rules import legal, moves
 from chessnea.ui import bar, board, overlay
 from chessnea.ui.selection import Selection
+
+logger: logging.Logger = logging.getLogger(name = __name__)
 
 FPS: int = 60
 
@@ -236,9 +236,9 @@ class App:
 			self.checkGameOver(timeOut = True)
 			return
 		newPosition: types.Position = moves.applyMove(position = self.boardPosition, move = move)
-		self.clock.applyClockIncrement(sideToMove = moveColour)
 		if not self.clock.isRunning:
 			self.clock.setClockState(isRunning = True)
+		self.clock.applyClockIncrement(sideToMove = moveColour)
 		self.history.append(types.HistoryEntry(position = newPosition, move = move, clockTimes = self.clock.timeRemaining.copy()))
 		if animate:
 			self.viewport.BoardAnimations.startMoveAnimation(board = self.viewport, move = move, boardPosition = self.boardPosition)
@@ -282,6 +282,7 @@ class App:
 		if self.gameOverReason is None:
 			return
 		self.clock.setClockState(isRunning = False)
+		self.selection.clear()
 		winner: types.PieceColour | None = None
 		if self.gameOverReason in (types.GameOverReason.CHECKMATE, types.GameOverReason.TIMEOUT):
 			winner = legal.getOpposingColour(colour = self.boardPosition.sideToMove)

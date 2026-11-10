@@ -1,4 +1,5 @@
 """Defines FEN (Forsyth-Edwards Notation) handling functions."""
+
 import logging
 
 from chessnea.core import types

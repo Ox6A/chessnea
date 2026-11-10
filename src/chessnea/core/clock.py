@@ -1,13 +1,12 @@
 """Functions necessary for the game clock to work."""
 
-DEFAULT_STARTING_TIME_SECONDS: int = 600
-DEFAULT_INCREMENT_SECONDS: int = 5
-
 import math
 import time
 
 from chessnea.core import types
 
+DEFAULT_STARTING_TIME_SECONDS: int = 600
+DEFAULT_INCREMENT_SECONDS: int = 5
 
 class Clock:
     """A class representing a chess clock."""
@@ -95,7 +94,7 @@ class Clock:
         if timeRemaining < 10:
             hundredths: int = math.floor(timeRemaining * 100)
             return f"{hundredths // 100:02d}.{hundredths % 100:02d}"
-        totalSeconds = math.ceil(self.timeRemaining[sideToMove])
+        totalSeconds = math.floor(self.timeRemaining[sideToMove])
         minutes = totalSeconds // 60
         seconds = totalSeconds % 60
         return f"{minutes:02d}:{seconds:02d}"

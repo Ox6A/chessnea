@@ -136,20 +136,34 @@ class BoardViewport:
 
 		@staticmethod
 		def startMoveAnimation(board: "BoardViewport", move: types.Move, boardPosition: types.Position) -> None:
-			"""Starts a move animation for a given move.
+			"""Starts a move animation for a given move, plus one for castling.
 			
 			Args:
 				board: The board viewport.
 				move: The move to animate.
 				boardPosition: The board position after the move.
 			"""
+			toRow, toCol = move.toSquare
+			piece, colour = boardPosition.board[toRow][toCol]
+			startMs: int = pygame.time.get_ticks()
 			board.moveAnimations.append(types.MoveAnimation(
 				fromSquare = move.fromSquare,
 				toSquare = move.toSquare,
-				piece = boardPosition.board[move.toSquare[0]][move.toSquare[1]][0],
-				colour = boardPosition.board[move.toSquare[0]][move.toSquare[1]][1],
-				startMs = pygame.time.get_ticks()
+				piece = piece,
+				colour = colour,
+				startMs = startMs
 			))
+			# Castling is the only move where the king travels two columns
+			if piece == types.Piece.KING and abs(toCol - move.fromSquare[1]) == 2:
+				rookFromCol: int = 7 if toCol == 6 else 0
+				rookToCol: int = 5 if toCol == 6 else 3
+				board.moveAnimations.append(types.MoveAnimation(
+					fromSquare = (toRow, rookFromCol),
+					toSquare = (toRow, rookToCol),
+					piece = types.Piece.ROOK,
+					colour = colour,
+					startMs = startMs
+				))
 
 	# Caching system: At (480px, static), 182.2 mus -> 74.7 mus. 2.44x speedup (1.86x at 960px)
 	# Slower overall for per frame rendering: (480px), 185.1 mus -> 354.4 mus. 1.91x slowdown (2.47x slower at 960px)
