@@ -4,8 +4,6 @@ import typing
 from dataclasses import dataclass
 from enum import IntEnum
 
-import pygame
-
 Square: typing.TypeAlias = tuple[int, int] 
 """Represents a square on the chessboard as (row, col) with (0, 0) at a8 and (7, 7) at h1."""
 
@@ -155,59 +153,6 @@ class Move:
 	toSquare: Square
 	promotionPiece: Piece | None = None
 
-class SelectionState(IntEnum):
-	NONE = 0
-	DRAGGING = 1
-	SELECTED = 2
-
-@dataclass(frozen = True, slots = True)
-class StationaryBoardCache:
-	"""Cache for the stationary board: background, static pieces minus selected piece if present.
-
-	Rebuilt when static pieces change on the board.
-
-	Attributes:
-		surface: Surface for the entire board.
-		hiddenSquares: Set of squares that are hidden.
-		boardState: Board state used for the current cached board.
-		lastMove: Last move used for last move highlighting.
-	"""
-
-	surface: pygame.Surface
-	hiddenSquares: frozenset[Square]
-	boardState: Board
-	lastMove: Move | None
-
-@dataclass(frozen = True, slots = True)
-class HighlightedBoardCache:
-	"""Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
-
-	Rebuilt when selection highlighting changes (piece selected/deselected)
-	or stationaryBoardCache is rebuilt.
-
-	Attributes:
-		surface: Surface for the entire board.
-		selectedSquare: Selection square, or None.
-		possibleMoves: Possible moves used for move highlighting.
-	"""
-	surface: pygame.Surface
-	selectedSquare: Square | None
-	possibleMoves: list[Move] | None
-
-class CacheLevel(IntEnum):
-	"""Represents the level of board cache."""
-	STATIONARY = 0
-	HIGHLIGHTED = 1
-
-@dataclass(frozen = True)
-class MoveAnimation:
-	fromSquare: Square
-	toSquare: Square
-	piece: Piece
-	colour: PieceColour
-	startMs: int
-	durationMs: int = 200
- 
 class GameOverReason(IntEnum):
 	"""Represents the reason for game over."""
 	CHECKMATE = 0

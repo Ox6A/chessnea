@@ -12,7 +12,7 @@ from chessnea import __version__
 from chessnea.core import clock, fen, types, uci
 from chessnea.engine import engine
 from chessnea.rules import legal, moves
-from chessnea.ui import bar, board, overlay
+from chessnea.ui import bar, board, overlay, selection
 from chessnea.ui.selection import Selection
 
 logger: logging.Logger = logging.getLogger(name = __name__)
@@ -94,11 +94,11 @@ class App:
 				elif event.type == pygame.MOUSEMOTION:
 					pos = typing.cast(tuple[int, int], event.pos)
 					buttonsHeld: tuple[int, int, int] = typing.cast(tuple[int, int, int], event.buttons)
-					if buttonsHeld[0] and mouseDownPosition is not None and self.selection.state == types.SelectionState.SELECTED:
+					if buttonsHeld[0] and mouseDownPosition is not None and self.selection.state == selection.SelectionState.SELECTED:
 						distanceFromSquare: tuple[int, int] = (pos[0] - mouseDownPosition[0], pos[1] - mouseDownPosition[1])
 						modulusFromSquare: float = typing.cast(float, (distanceFromSquare[0] ** 2 + distanceFromSquare[1] ** 2) ** 0.5)
 						if modulusFromSquare > self.layout.squarePx * 0.25:
-							self.selection.state = types.SelectionState.DRAGGING
+							self.selection.state = selection.SelectionState.DRAGGING
 							logger.debug(msg = "Input: Switching selection state from SELECTED to DRAGGING")
 				elif event.type == pygame.MOUSEBUTTONUP:
 					button = typing.cast(int, event.button)
@@ -184,9 +184,9 @@ class App:
 				return
 			logger.debug(msg = f"Input: Picking up {colour.name} {piece.name} at square {square}")
 			possibleMoves = legal.getLegalMovesForPiece(position = self.boardPosition, square = square)
-			self.selection.select(square = square, possibleMoves = possibleMoves, state = types.SelectionState.SELECTED)
+			self.selection.select(square = square, possibleMoves = possibleMoves, state = selection.SelectionState.SELECTED)
 		elif event.type == pygame.MOUSEBUTTONUP:
-			if self.selection.state == types.SelectionState.DRAGGING:
+			if self.selection.state == selection.SelectionState.DRAGGING:
 				matchedMoveToSquare= self.findMatchingMoveWithSquare(fromSquare = typing.cast(types.Square, self.selection.selectedSquare), toSquare = typing.cast(types.Square, square), possibleMoves = self.selection.possibleMoves or [])
 				if matchedMoveToSquare is not None:
 					logger.debug(msg = f"Input: Attempting move from {self.selection.selectedSquare} to {square}")

@@ -3,6 +3,7 @@
 import logging
 import math
 from dataclasses import dataclass
+from enum import IntEnum
 
 import pygame
 
@@ -36,15 +37,63 @@ class Layout:
 			window = (boardPx, boardPx + topBar),
 		)
 
+@dataclass(frozen = True, slots = True)
+class StationaryBoardCache:
+	"""Cache for the stationary board: background, static pieces minus selected piece if present.
+
+	Rebuilt when static pieces change on the board.
+
+	Attributes:
+		surface: Surface for the entire board.
+		hiddenSquares: Set of squares that are hidden.
+		boardState: Board state used for the current cached board.
+		lastMove: Last move used for last move highlighting.
+	"""
+
+	surface: pygame.Surface
+	hiddenSquares: frozenset[types.Square]
+	boardState: types.Board
+	lastMove: types.Move | None
+
+@dataclass(frozen = True, slots = True)
+class HighlightedBoardCache:
+	"""Cache for the entire board: copy of stationaryBoardCache + selection square/move highlighting.
+
+	Rebuilt when selection highlighting changes (piece selected/deselected)
+	or stationaryBoardCache is rebuilt.
+
+	Attributes:
+		surface: Surface for the entire board.
+		selectedSquare: Selection square, or None.
+		possibleMoves: Possible moves used for move highlighting.
+	"""
+	surface: pygame.Surface
+	selectedSquare: types.Square | None
+	possibleMoves: list[types.Move] | None
+
+class CacheLevel(IntEnum):
+	"""Represents the level of board cache."""
+	STATIONARY = 0
+	HIGHLIGHTED = 1
+
+@dataclass(frozen = True)
+class MoveAnimation:
+	fromSquare: types.Square
+	toSquare: types.Square
+	piece: types.Piece
+	colour: types.PieceColour
+	startMs: int
+	durationMs: int = 200
+
 class BoardViewport:
 	def __init__(self, layout: Layout) -> None:
 		self.layout: Layout = layout
 		self.sprites: dict[tuple[types.PieceColour, types.Piece], pygame.Surface] = assets.loadSprites(squarePx = self.layout.squarePx)
 		self.backgroundSurface: pygame.Surface = self.createBoardBackgroundSurface()
 		self.checkHighlightSurface: pygame.Surface = self.createCheckHighlightSurface()
-		self.stationaryBoardCache: types.StationaryBoardCache | None = None
-		self.highlightedBoardCache: types.HighlightedBoardCache | None = None
-		self.moveAnimations: list[types.MoveAnimation] = []
+		self.stationaryBoardCache: StationaryBoardCache | None = None
+		self.highlightedBoardCache: HighlightedBoardCache | None = None
+		self.moveAnimations: list[MoveAnimation] = []
 		self.lastMoveHighlightSurface: pygame.Surface = pygame.Surface((self.layout.squarePx, self.layout.squarePx), flags = pygame.SRCALPHA)
 		_ = self.lastMoveHighlightSurface.fill(color = theme.SQUARE_HIGHLIGHT_LAST_MOVE)
 
@@ -146,7 +195,7 @@ class BoardViewport:
 			toRow, toCol = move.toSquare
 			piece, colour = boardPosition.board[toRow][toCol]
 			startMs: int = pygame.time.get_ticks()
-			board.moveAnimations.append(types.MoveAnimation(
+			board.moveAnimations.append(MoveAnimation(
 				fromSquare = move.fromSquare,
 				toSquare = move.toSquare,
 				piece = piece,
@@ -157,7 +206,7 @@ class BoardViewport:
 			if piece == types.Piece.KING and abs(toCol - move.fromSquare[1]) == 2:
 				rookFromCol: int = 7 if toCol == 6 else 0
 				rookToCol: int = 5 if toCol == 6 else 3
-				board.moveAnimations.append(types.MoveAnimation(
+				board.moveAnimations.append(MoveAnimation(
 					fromSquare = (toRow, rookFromCol),
 					toSquare = (toRow, rookToCol),
 					piece = types.Piece.ROOK,
@@ -167,11 +216,11 @@ class BoardViewport:
 
 	# Caching system: At (480px, static), 182.2 mus -> 74.7 mus. 2.44x speedup (1.86x at 960px)
 	# Slower overall for per frame rendering: (480px), 185.1 mus -> 354.4 mus. 1.91x slowdown (2.47x slower at 960px)
-	def refreshBoardCache(self, cacheLevel: types.CacheLevel, boardPosition: types.Position, selectionState: selection.Selection, hiddenSquares: frozenset[types.Square], lastMove: types.Move | None) -> pygame.Surface:
+	def refreshBoardCache(self, cacheLevel: CacheLevel, boardPosition: types.Position, selectionState: selection.Selection, hiddenSquares: frozenset[types.Square], lastMove: types.Move | None) -> pygame.Surface:
 		boardSurface: pygame.Surface = self.backgroundSurface.copy()
 		rect: pygame.Rect
 		sprite: pygame.Surface
-		if cacheLevel == types.CacheLevel.STATIONARY:
+		if cacheLevel == CacheLevel.STATIONARY:
 			# Highlight the squares the last move was played from and to, before the check gradient so it stays on top
 			if lastMove is not None:
 				for square in (lastMove.fromSquare, lastMove.toSquare):
@@ -195,7 +244,7 @@ class BoardViewport:
 					# Account for the top bar offset given by our helper
 					rect = rect.move(0, -self.layout.topBarPx)
 					_ = boardSurface.blit(source = sprite, dest = sprite.get_rect(center = rect.center))
-		else: # types.CacheLevel.HIGHLIGHTED
+		else: # CacheLevel.HIGHLIGHTED
 			# Start with stationary cache
 			if self.stationaryBoardCache is None:
 				raise ValueError("Render: Stationary cache is None when refreshing highlighted cache")
@@ -272,8 +321,8 @@ class BoardViewport:
 			hiddenSquares = hiddenSquares | {squareBoundToCursor}
 		if self.stationaryBoardCache is None or self.stationaryBoardCache.boardState != boardState or self.stationaryBoardCache.hiddenSquares != hiddenSquares or self.stationaryBoardCache.lastMove != lastMove:
 			# Stationary cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
-			self.stationaryBoardCache = types.StationaryBoardCache(
+			cachedSurface = self.refreshBoardCache(cacheLevel = CacheLevel.STATIONARY, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
+			self.stationaryBoardCache = StationaryBoardCache(
 				surface = cachedSurface,
 				hiddenSquares = hiddenSquares,
 				boardState = boardState,
@@ -285,8 +334,8 @@ class BoardViewport:
 		# Try highlighted cache next
 		if self.highlightedBoardCache is None or self.highlightedBoardCache.selectedSquare != selectionState.selectedSquare:
 			# Highlighted cache miss
-			cachedSurface = self.refreshBoardCache(cacheLevel = types.CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
-			self.highlightedBoardCache = types.HighlightedBoardCache(
+			cachedSurface = self.refreshBoardCache(cacheLevel = CacheLevel.HIGHLIGHTED, boardPosition = boardPosition, selectionState = selectionState, hiddenSquares = hiddenSquares, lastMove = lastMove)
+			self.highlightedBoardCache = HighlightedBoardCache(
 				surface = cachedSurface,
 				selectedSquare = selectionState.selectedSquare,
 				possibleMoves = selectionState.possibleMoves
