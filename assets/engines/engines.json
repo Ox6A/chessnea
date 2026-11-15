@@ -1,0 +1,13 @@
+{
+	"engines": [
+		{
+			"name": "stockfish",
+			"downloads": {
+				"Windows-AMD64": { "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-x86-64-universal.zip", "executablePath": "stockfish/stockfish-windows-x86-64-universal.exe" },
+				"Windows-ARM64": { "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-arm64-universal.zip", "executablePath": "stockfish/stockfish-windows-arm64-universal.exe" },
+				"Linux-x86_64": { "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-linux-x86-64-universal.tar.gz", "executablePath": "stockfish/stockfish-linux-x86-64-universal" },
+				"Linux-aarch64": { "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-linux-arm64-universal.tar.gz", "executablePath": "stockfish/stockfish-linux-arm64-universal" }
+			}
+		}
+	]
+}

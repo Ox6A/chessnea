@@ -7,8 +7,10 @@ from os import environ
 
 import pygame
 
+import chessnea.engine.config as engineConfig
 from chessnea import __version__
-from chessnea.core import clock, fen, types
+from chessnea.core import clock, fen, types, uci
+from chessnea.engine import engine
 from chessnea.rules import legal, moves
 from chessnea.ui import bar, board, overlay
 from chessnea.ui.selection import Selection
@@ -31,7 +33,7 @@ def checkPositiveIntFromArgument(text: str) -> int:
 
 
 class App:
-	def __init__(self, boardSize: int | None = None) -> None:
+	def __init__(self, players: dict[types.PieceColour, engineConfig.EngineConfig | None], boardSize: int | None = None) -> None:
 		# Enable V-Sync
 		environ["SDL_VSYNC"] = "1"
 
@@ -58,6 +60,14 @@ class App:
 		self.gameOverOverlay: overlay.GameOverOverlay | None = None
 		self.clock: clock.Clock = clock.Clock()
 		self.topBar: bar.Bar = bar.Bar(layout = self.layout, padLeftLabels = ["Menu"], padRightLabels = ["Exit", "Undo"])
+		# engines
+		self.engines: dict[types.PieceColour, engine.Engine | None] = {}
+		for colour, config in players.items():
+			if config is None:
+				self.engines[colour] = None
+				logger.debug(msg = f"Init: No engine configured for {colour.name}, using human player")
+			else:
+				self.engines[colour] = engine.Engine(config = config)
 		logger.debug(msg = "Init: Starting main loop")
 		mouseDownPosition: tuple[int, int] | None = None
 		running: bool = True
@@ -100,7 +110,8 @@ class App:
 					key = typing.cast(int, event.key)
 					modifiers = typing.cast(int, event.mod)
 					if key == pygame.K_z and (modifiers & pygame.KMOD_CTRL):
-						self.undoMove(plies = 1)
+						self.undoMove(plies = self.getUndoPlies())
+			self.updateTurn()
 			if self.gameOverReason is None and self.clock.updateClock(sideToMove = self.boardPosition.sideToMove):
 				self.checkGameOver(timeOut = True)
 			_ = self.screen.fill(color = (255, 255, 255))
@@ -110,6 +121,7 @@ class App:
 			self.topBar.draw(screen = self.screen, mousePosition = mousePosition, clock = self.clock, sideToMove = self.boardPosition.sideToMove, clockEnabled = self.gameOverReason is None)
 			pygame.display.flip()
 			_ = pygameclock.tick(FPS)
+		self.cleanupEngines()
 
 	@property
 	def boardPosition(self) -> types.Position:
@@ -139,6 +151,8 @@ class App:
 					logger.debug(msg = f"Input: Mouse click at {mousePosition} on new game button, starting new game")
 					self.startNewGame()
 			return
+		if self.engines[self.boardPosition.sideToMove] is not None:
+			return # Ignore mouse input if it's the engine's turn, we need to add queuing moves later
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if square is None:
 				logger.debug(msg = f"Input: Mouse click outside of board at {mousePosition}, clearing selection state")
@@ -202,7 +216,7 @@ class App:
 			logger.info(msg = "Input: Exiting application")
 			return False
 		elif label == "Undo":
-			self.undoMove(plies = 1)
+			self.undoMove(plies = self.getUndoPlies())
 		elif label == "Menu":
 			logger.info(msg = "Input: Menu button clicked")
 		return True
@@ -254,6 +268,7 @@ class App:
 		if totalMoves < plies:
 			logger.warning(msg = f"Board: Attempted to undo {plies} plies, but only {totalMoves} moves have been played")
 			return 
+		self.cancelEngineSearches()
 		for _ in range(plies):
 			_ = self.history.pop()
 		logger.info(msg = f"Board: Undid {plies} plies")
@@ -300,13 +315,61 @@ class App:
 		self.gameOverReason = None
 		self.gameOverOverlay = None
 		self.clock.resetClock()
-			
+		for engineVar in self.engines.values():
+			if engineVar is not None:
+				engineVar.newGame()
+	def updateTurn(self) -> None:
+		"""Updates the turn and checks if the engine needs to make a move."""
+		if self.gameOverReason is not None:
+			return
+		engineVar: engine.Engine | None = self.engines[self.boardPosition.sideToMove]
+		if engineVar is None:
+			return # human player
+		if not engineVar.searching:
+			UCIMoves: list[str] = [uci.moveToUCI(move = entry.move) for entry in self.history[1:] if entry.move is not None]
+			engineVar.startSearch(startFEN = fen.exportPositionObjectToFEN(position = self.history[0].position), UCIMoves = UCIMoves, clock = self.clock)
+			return
+		bestMove: str | None = engineVar.pollEngineMove()
+		if bestMove is None:
+			return
+		move: types.Move = uci.UCIToMove(uciMove = bestMove)
+		if move not in legal.getAllLegalMoves(position = self.boardPosition):
+			logger.error(msg = f"Engine: Engine returned illegal move {bestMove}, ignoring")
+			engineVar.close()
+			sys.exit()
+		logger.info(msg = f"Engine: Engine returned move {bestMove}")
+		self.playMove(move = move, animate = True)
+	
+	def cancelEngineSearches(self) -> None:
+		"""Cancels any ongoing engine searches."""
+		for engineVar in self.engines.values():
+			if engineVar is not None:
+				engineVar.cancelSearch()
+	
+	def cleanupEngines(self) -> None:
+		"""Closes all engine processes."""
+		for engineVar in self.engines.values():
+			if engineVar is not None:
+				engineVar.close()
+
+	def getUndoPlies(self) -> int:
+		"""Returns the number of plies to undo based on the current game state to return to the human's turn"""
+		if self.engines[types.PieceColour.WHITE] is not None and self.engines[types.PieceColour.BLACK] is not None:
+			return 1
+		plies: int = 1 
+		while plies < len(self.history) - 1 and self.engines[self.history[-1 - plies].position.sideToMove] is not None:
+			plies += 1
+		return plies
 
 def main() -> None:
 	parser: argparse.ArgumentParser = argparse.ArgumentParser(description = "Chessnea", suggest_on_error = True)
 	_ = parser.add_argument("--version", action = "version", version = __version__)
 	_ = parser.add_argument("--board-size", type = checkPositiveIntFromArgument, default = None, metavar = "PX", help = "Board size in pixels, e.g. 800 [default: auto-scale]")
 	_ = parser.add_argument("--debug", action = "store_true", help="Enable debug logging")
+	engineConfigs: dict[str, engineConfig.EngineConfig] = engineConfig.loadConfig()
+	playersInitial: list[str] = ["human", *engineConfigs.keys()]
+	_ = parser.add_argument("--white", choices = playersInitial, default = "human", help = "Who plays White [default: human]")
+	_ = parser.add_argument("--black", choices = playersInitial, default = "human", help = "Who plays Black [default: human]")
 	args: argparse.Namespace = parser.parse_args()
 	if args.debug:  # pyright: ignore[reportAny]
 		logging.basicConfig(level = logging.DEBUG, format = "[%(asctime)s] [%(levelname)s] %(message)s", datefmt = "%H:%M:%S")
@@ -319,4 +382,8 @@ def main() -> None:
 	else:
 		logger.debug(msg = "Init: No command-line arguments given!")
 	logger.debug(msg = "Init: Running initialisation...")
-	_ = App(boardSize = args.board_size)  # pyright: ignore[reportAny]
+	players: dict[types.PieceColour, engineConfig.EngineConfig | None] = {
+		types.PieceColour.WHITE: engineConfigs.get(typing.cast(str, args.white)),
+		types.PieceColour.BLACK: engineConfigs.get(typing.cast(str, args.black)),
+	}
+	_ = App(boardSize = args.board_size, players = players)  # pyright: ignore[reportAny]
